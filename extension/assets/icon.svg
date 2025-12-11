@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <!-- Background -->
+  <rect width="128" height="128" fill="#0969da" rx="20"/>
+
+  <!-- GitHub Octocat simplified bell icon -->
+  <g transform="translate(32, 32)">
+    <!-- Bell -->
+    <path d="M 32 8 C 28 8 24 12 24 16 L 24 40 C 24 48 18 52 14 56 L 50 56 C 46 52 40 48 40 40 L 40 16 C 40 12 36 8 32 8 Z" fill="white"/>
+
+    <!-- Bell clapper -->
+    <circle cx="32" cy="60" r="4" fill="white"/>
+
+    <!-- Subscription indicator (star) -->
+    <path d="M 52 12 L 54 18 L 60 18 L 55 22 L 57 28 L 52 24 L 47 28 L 49 22 L 44 18 L 50 18 Z" fill="#ffd33d"/>
+  </g>
+</svg>
