@@ -85,28 +85,29 @@ function createPlaceholder() {
   return placeholder;
 }
 
-// Find the main content area
+// Find the main content area (the right-side issues list, not the whole page)
 function getMainContent() {
-  // Look for the main content area where React renders issues
-  return document.querySelector('main') || document.querySelector('[role="main"]');
+  // The page structure is: <main> -> <nav sidebar> + <main> inner
+  // We want to hide only the inner main (right side), not the whole page
+  const mainElements = document.querySelectorAll('main');
+  // Return the last/innermost main element (the content area, not the page container)
+  return mainElements.length > 1 ? mainElements[mainElements.length - 1] : mainElements[0];
 }
 
 // Show the bookmarks view
 function showBookmarksView() {
+  const main = getMainContent();
+  if (!main) return;
+
   if (!bookmarksPlaceholder) {
     bookmarksPlaceholder = createPlaceholder();
-    const main = getMainContent();
-    if (main) {
-      main.style.display = 'none';
-      bookmarksPlaceholder.style.display = 'block';
-      // Insert after main, or at the end of body
-      main.parentNode.insertBefore(bookmarksPlaceholder, main.nextSibling);
-    }
-  } else {
-    const main = getMainContent();
-    if (main) main.style.display = 'none';
-    bookmarksPlaceholder.style.display = 'block';
+    // Insert the placeholder after the main element (in its parent)
+    main.parentNode.insertBefore(bookmarksPlaceholder, main.nextSibling);
   }
+
+  // Hide the React content, show our placeholder
+  main.style.display = 'none';
+  bookmarksPlaceholder.style.display = 'block';
 
   // Update nav item active state
   updateNavItemActiveState(true);
