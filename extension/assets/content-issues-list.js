@@ -101,12 +101,17 @@ function showBookmarksView() {
 
   if (!bookmarksPlaceholder) {
     bookmarksPlaceholder = createPlaceholder();
-    // Insert the placeholder after the main element (in its parent)
-    main.parentNode.insertBefore(bookmarksPlaceholder, main.nextSibling);
+    // Insert the placeholder as the first child inside main (so it shows in the right content area)
+    main.insertBefore(bookmarksPlaceholder, main.firstChild);
   }
 
   // Hide the React content, show our placeholder
-  main.style.display = 'none';
+  // Hide all children except our placeholder
+  for (let child of main.children) {
+    if (child !== bookmarksPlaceholder) {
+      child.style.display = 'none';
+    }
+  }
   bookmarksPlaceholder.style.display = 'block';
 
   // Update nav item active state
@@ -116,7 +121,14 @@ function showBookmarksView() {
 // Hide the bookmarks view
 function hideBookmarksView() {
   const main = getMainContent();
-  if (main) main.style.display = '';
+  if (!main) return;
+
+  // Show all children except our placeholder
+  for (let child of main.children) {
+    if (child !== bookmarksPlaceholder) {
+      child.style.display = '';
+    }
+  }
   if (bookmarksPlaceholder) {
     bookmarksPlaceholder.style.display = 'none';
   }
