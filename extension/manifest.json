@@ -1,13 +1,13 @@
 {
   "$schema": "https://json.schemastore.org/chrome-manifest",
-  "name": "GitHub Subscribed Issues Tracker",
+  "name": "GitHub Bookmarked Issues Tracker",
   "version": "1.0.0",
-  "description": "Track your subscribed GitHub issues across all repositories with cross-device sync",
+  "description": "Track your bookmarked GitHub issues across all repositories with cross-device sync",
   "manifest_version": 3,
   "minimum_chrome_version": "123",
   "browser_specific_settings": {
     "gecko": {
-      "id": "github-subscribed-issues@extensions",
+      "id": "github-bookmarked-issues@extensions",
       "strict_min_version": "128.0"
     }
   },
@@ -41,6 +41,16 @@
       ],
       "js": [
         "assets/content.js"
+      ]
+    },
+    {
+      "run_at": "document_end",
+      "matches": [
+        "https://github.com/issues",
+        "https://github.com/issues/*"
+      ],
+      "js": [
+        "assets/content-issues-list.js"
       ]
     }
   ]

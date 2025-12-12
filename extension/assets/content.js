@@ -3,13 +3,22 @@ if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
   globalThis.browser = chrome;
 }
 
-// Content script to capture subscribe/unsubscribe actions on GitHub issues and PRs
+// Content script to add bookmark button to GitHub issue/PR pages
 
 (function() {
   'use strict';
 
-  // Selector for GitHub's subscribe/unsubscribe button
-  const SUBSCRIBE_BUTTON_SELECTOR = 'button[aria-describedby*="subscription-description"]';
+  // Octicon SVG paths
+  const ICONS = {
+    bookmark: '<svg aria-hidden="true" focusable="false" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;" class="octicon octicon-bookmark"><path d="M3 2.75C3 1.784 3.784 1 4.75 1h6.5c.966 0 1.75.784 1.75 1.75v11.5a.75.75 0 0 1-1.227.579L8 11.722l-3.773 3.107A.751.751 0 0 1 3 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v9.91l3.023-2.489a.75.75 0 0 1 .954 0l3.023 2.49V2.75a.25.25 0 0 0-.25-.25Z"></path></svg>',
+    bookmarkFilled: '<svg aria-hidden="true" focusable="false" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;" class="octicon octicon-bookmark-filled"><path d="M3 2.75C3 1.784 3.784 1 4.75 1h6.5c.966 0 1.75.784 1.75 1.75v11.5a.75.75 0 0 1-1.227.579L8 11.722l-3.773 3.107A.75.75 0 0 1 3 14.25V2.75Z"></path></svg>'
+  };
+
+  // Selector for page header actions (using prefix to avoid CSS module hash)
+  const HEADER_ACTIONS_SELECTOR = '[data-component="PH_Actions"] [class*="HeaderMenu-module__menuActionsContainer"]';
+
+  // Extension button marker
+  const BOOKMARK_BUTTON_ATTR = 'data-extension-bookmark';
 
   // Extract issue/PR data from current page
   function getIssueData() {
@@ -31,87 +40,124 @@ if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
       number: parseInt(number, 10),
       title,
       url: window.location.href,
-      subscribedAt: Date.now()
+      bookmarkedAt: Date.now()
     };
   }
 
-  // Handle subscribe button click
-  async function handleSubscribeClick(button) {
-    const issueData = getIssueData();
-    if (!issueData) {
-      return;
+  // Check if current issue is bookmarked
+  async function isBookmarked(issueId) {
+    try {
+      const response = await browser.runtime.sendMessage({
+        type: 'GET_BOOKMARKS'
+      });
+      return !!response.bookmarks[issueId];
+    } catch (error) {
+      console.error('[GitHub Bookmarked Issues] Failed to check bookmark status:', error);
+      return false;
     }
-
-    const buttonText = button.textContent.trim();
-    const action = buttonText === 'Subscribe' ? 'subscribe' : 'unsubscribe';
-
-    console.log(`[GitHub Subscribed Issues] ${action === 'subscribe' ? 'Subscribing to' : 'Unsubscribing from'}:`, issueData.id);
-
-    // Wait a moment for GitHub to process the action
-    setTimeout(async () => {
-      try {
-        if (action === 'subscribe') {
-          await browser.runtime.sendMessage({
-            type: 'SUBSCRIBE_ISSUE',
-            data: issueData
-          });
-          console.log('[GitHub Subscribed Issues] Stored subscription');
-        } else {
-          await browser.runtime.sendMessage({
-            type: 'UNSUBSCRIBE_ISSUE',
-            data: { id: issueData.id }
-          });
-          console.log('[GitHub Subscribed Issues] Removed subscription');
-        }
-      } catch (error) {
-        console.error(`[GitHub Subscribed Issues] Failed to ${action}:`, error);
-      }
-    }, 500);
   }
 
-  // Monitor for subscribe/unsubscribe button clicks
-  let clickListenerAdded = false;
+  // Update bookmark button icon
+  function updateBookmarkButton(button, bookmarked) {
+    button.innerHTML = bookmarked ? ICONS.bookmarkFilled : ICONS.bookmark;
+    button.setAttribute('aria-label', bookmarked ? 'Remove bookmark' : 'Bookmark issue');
+  }
 
-  function monitorSubscribeButton() {
+  // Handle bookmark button click
+  async function handleBookmarkClick(button) {
     const issueData = getIssueData();
     if (!issueData) {
-      console.log('[GitHub Subscribed Issues] Not on an issue/PR page');
       return;
     }
 
-    console.log('[GitHub Subscribed Issues] Monitoring issue:', issueData.id);
+    const bookmarked = await isBookmarked(issueData.id);
 
-    // Only add click listener once
-    if (!clickListenerAdded) {
-      document.addEventListener('click', (event) => {
-        const button = event.target.closest(SUBSCRIBE_BUTTON_SELECTOR);
-
-        if (button) {
-          console.log('[GitHub Subscribed Issues] Subscribe button clicked:', button.textContent.trim());
-          handleSubscribeClick(button);
-        }
-      }, true); // Use capture phase
-
-      clickListenerAdded = true;
-      console.log('[GitHub Subscribed Issues] Click listener added');
+    try {
+      if (bookmarked) {
+        // Remove bookmark
+        await browser.runtime.sendMessage({
+          type: 'UNBOOKMARK_ISSUE',
+          data: { id: issueData.id }
+        });
+        console.log('[GitHub Bookmarked Issues] Removed bookmark:', issueData.id);
+        updateBookmarkButton(button, false);
+      } else {
+        // Add bookmark
+        await browser.runtime.sendMessage({
+          type: 'BOOKMARK_ISSUE',
+          data: issueData
+        });
+        console.log('[GitHub Bookmarked Issues] Added bookmark:', issueData.id);
+        updateBookmarkButton(button, true);
+      }
+    } catch (error) {
+      console.error('[GitHub Bookmarked Issues] Failed to toggle bookmark:', error);
     }
+  }
+
+  // Create and insert bookmark button
+  async function insertBookmarkButton() {
+    const issueData = getIssueData();
+    if (!issueData) {
+      console.log('[GitHub Bookmarked Issues] Not on an issue/PR page');
+      return;
+    }
+
+    const actionsContainer = document.querySelector(HEADER_ACTIONS_SELECTOR);
+    if (!actionsContainer) {
+      console.log('[GitHub Bookmarked Issues] Header actions not found');
+      return;
+    }
+
+    // Check if button already exists
+    if (document.querySelector(`[${BOOKMARK_BUTTON_ATTR}]`)) {
+      console.log('[GitHub Bookmarked Issues] Bookmark button already exists');
+      return;
+    }
+
+    // Create bookmark button
+    const bookmarkButton = document.createElement('button');
+    bookmarkButton.setAttribute('data-component', 'IconButton');
+    bookmarkButton.setAttribute('type', 'button');
+    bookmarkButton.className = 'prc-Button-ButtonBase-c50BI prc-Button-IconButton-szpyj';
+    bookmarkButton.setAttribute('data-loading', 'false');
+    bookmarkButton.setAttribute('data-no-visuals', 'true');
+    bookmarkButton.setAttribute('data-size', 'medium');
+    bookmarkButton.setAttribute('data-variant', 'invisible');
+    bookmarkButton.setAttribute(BOOKMARK_BUTTON_ATTR, 'true');
+
+    // Check if already bookmarked and set initial state
+    const bookmarked = await isBookmarked(issueData.id);
+    updateBookmarkButton(bookmarkButton, bookmarked);
+
+    // Add click handler
+    bookmarkButton.addEventListener('click', () => handleBookmarkClick(bookmarkButton));
+
+    // Insert as last child in header actions
+    actionsContainer.appendChild(bookmarkButton);
+
+    console.log('[GitHub Bookmarked Issues] Bookmark button added');
   }
 
   // Initialize when page loads
   function init() {
+    console.log(`[GitHub Bookmarked Issues] init() readyState: ${document.readyState}`);
     if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', monitorSubscribeButton);
+      // FIXME: Button is not inserted on navigation to a new issue page, but will be added if that
+      // page is *reloaded*.  So, SPA application problem?  Use a different event?
+      document.addEventListener('DOMContentLoaded', insertBookmarkButton);
     } else {
-      monitorSubscribeButton();
+      insertBookmarkButton();
     }
   }
 
+  // FIXME: This isn't working and no log output, maybe SPA is not `turbo:render`? Investigate refined-github's method.
   // Handle Turbo navigation (GitHub's SPA navigation)
   document.addEventListener('turbo:render', () => {
-    console.log('[GitHub Subscribed Issues] Turbo navigation detected, re-initializing');
-    monitorSubscribeButton();
+    console.log('[GitHub Bookmarked Issues] Turbo navigation detected, re-initializing');
+    insertBookmarkButton();
   });
 
-  // Start monitoring
+  // Start
   init();
 })();

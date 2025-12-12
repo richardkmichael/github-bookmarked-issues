@@ -3,7 +3,7 @@ if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
   globalThis.browser = chrome;
 }
 
-// Popup script to display subscribed issues
+// Popup script to display bookmarked issues
 
 // Fetch issue details from GitHub API
 async function fetchIssueDetails(owner, repo, number, type) {
@@ -40,7 +40,7 @@ async function displayStorageInfo() {
       return;
     }
 
-    storageInfoEl.textContent = `${response.count} subscriptions • ${response.percentUsed}% of storage used`;
+    storageInfoEl.textContent = `${response.count} bookmarks • ${response.percentUsed}% of storage used`;
 
     if (response.percentUsed > 90) {
       storageInfoEl.style.color = '#cf222e';
@@ -52,24 +52,24 @@ async function displayStorageInfo() {
 }
 
 // Display issues in the popup
-async function displayIssues(subscriptions) {
+async function displayIssues(bookmarks) {
   const loadingEl = document.getElementById('loading');
   const errorEl = document.getElementById('error');
   const containerEl = document.getElementById('issues-container');
   const emptyStateEl = document.getElementById('empty-state');
 
-  const subscriptionIds = Object.keys(subscriptions);
+  const bookmarkIds = Object.keys(bookmarks);
 
-  if (subscriptionIds.length === 0) {
+  if (bookmarkIds.length === 0) {
     loadingEl.style.display = 'none';
     emptyStateEl.style.display = 'block';
     return;
   }
 
-  // Fetch details for all subscribed issues
-  const issuePromises = subscriptionIds.map(id => {
-    const sub = subscriptions[id];
-    return fetchIssueDetails(sub.owner, sub.repo, sub.number, sub.type);
+  // Fetch details for all bookmarked issues
+  const issuePromises = bookmarkIds.map(id => {
+    const bookmark = bookmarks[id];
+    return fetchIssueDetails(bookmark.owner, bookmark.repo, bookmark.number, bookmark.type);
   });
 
   const issues = await Promise.all(issuePromises);
@@ -167,8 +167,8 @@ async function init() {
     // Display storage info
     await displayStorageInfo();
 
-    // Get subscriptions from background script
-    const response = await browser.runtime.sendMessage({ type: 'GET_SUBSCRIPTIONS' });
+    // Get bookmarks from background script
+    const response = await browser.runtime.sendMessage({ type: 'GET_BOOKMARKS' });
 
     if (response.error) {
       showError(response.error);
@@ -176,11 +176,11 @@ async function init() {
     }
 
     // Display issues
-    await displayIssues(response.subscriptions);
+    await displayIssues(response.bookmarks);
 
   } catch (error) {
     console.error('[Popup] Error initializing:', error);
-    showError('Failed to load subscribed issues');
+    showError('Failed to load bookmarked issues');
   }
 }
 

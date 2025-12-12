@@ -1,21 +1,21 @@
-# GitHub Subscribed Issues Tracker - Browser Extension
+# GitHub Bookmarked Issues Tracker - Browser Extension
 
-A privacy-first browser extension to track your subscribed GitHub issues across all repositories with automatic cross-device sync.
+A privacy-first browser extension to track your bookmarked GitHub issues across all repositories with automatic cross-device sync.
 
 ## Why This Extension?
 
-GitHub's native interface doesn't provide a way to view all your subscribed issues in one place. While the REST API supports `filter=subscribed`, it only returns issues from repositories you own, are a member of, or belong to your organizations - **not arbitrary public repositories**.
+GitHub's native interface doesn't provide a way to view all your bookmarked issues in one place. While the REST API supports `filter=bookmarkd`, it only returns issues from repositories you own, are a member of, or belong to your organizations - **not arbitrary public repositories**.
 
 This extension solves the problem by:
-- Capturing subscribe/unsubscribe actions as you browse GitHub
+- Adding a bookmark button to GitHub issue pages
 - Storing minimal data (only IDs) in browser sync storage
-- Syncing your subscriptions across all your devices automatically
+- Syncing your bookmarks across all your devices automatically
 - **No backend server** - completely privacy-first
 - Works with ANY repository on GitHub
 
 ## Features
 
-- ✅ Capture subscriptions from any GitHub repository
+- ✅ Bookmark issues from any GitHub repository
 - ✅ Cross-device sync via browser account (Firefox/Chrome)
 - ✅ Privacy-first: no external servers, no tracking
 - ✅ Minimal storage: only issue IDs synced (~50-100 issues supported)
@@ -47,30 +47,30 @@ For permanent installation in Firefox:
 
 ## Usage
 
-1. **Subscribe to issues on GitHub**:
+1. **Bookmark to issues on GitHub**:
    - Navigate to any GitHub issue or pull request
-   - Click the "Subscribe" button
+   - Click the "Bookmark" button
    - The extension will automatically capture and store it
 
-2. **View your subscriptions**:
+2. **View your bookmarks**:
    - Click the extension icon in your toolbar
-   - See all your subscribed issues with live status
+   - See all your bookmarkd issues with live status
    - Click any issue to open it on GitHub
 
 3. **Cross-device sync**:
    - Make sure you're signed into your browser account:
      - Chrome: Google Account with sync enabled
      - Firefox: Firefox Account with "Add-ons" sync enabled
-   - Subscriptions automatically sync across your devices!
+   - Bookmarks automatically sync across your devices!
 
 ## Storage Limits
 
 The extension uses `browser.storage.sync` which has a **100 KB limit**. With minimal data storage:
-- Each subscription: ~200 bytes
-- Maximum subscriptions: ~50-100 issues
+- Each bookmark: ~200 bytes
+- Maximum bookmarks: ~50-100 issues
 - Storage usage shown in popup
 
-If you approach the limit, consider unsubscribing from older issues.
+If you approach the limit, consider removing bookmarks from older issues.
 
 ## Privacy & Security
 
@@ -87,7 +87,7 @@ extension/
 ├── manifest.json           # Extension configuration
 ├── assets/
 │   ├── background.js       # Service worker for storage management
-│   ├── content.js          # Content script to capture subscribe clicks
+│   ├── content.js          # Content script to capture bookmark clicks
 │   ├── popup.html          # Popup interface
 │   ├── popup.js            # Popup logic
 │   └── icon.svg            # Extension icon
@@ -98,7 +98,7 @@ extension/
 
 1. **Content Script** (`content.js`):
    - Injected on GitHub issue/PR pages
-   - Monitors subscribe/unsubscribe button clicks
+   - Monitors bookmark/unbookmark button clicks
    - Sends messages to background script
 
 2. **Background Script** (`background.js`):
@@ -107,7 +107,7 @@ extension/
    - Tracks storage usage
 
 3. **Popup** (`popup.html` + `popup.js`):
-   - Displays subscribed issues
+   - Displays bookmarkd issues
    - Fetches live issue data from GitHub API
    - Shows storage usage stats
 
@@ -115,7 +115,7 @@ extension/
 
 - **Storage**: 100 KB limit (~50-100 issues)
 - **Firefox Android**: No sync storage support
-- **Retroactive**: Only tracks subscriptions made after installation
+- **Retroactive**: Only tracks bookmarks made after installation
 - **Rate Limits**: GitHub API has rate limits for unauthenticated requests (60/hour)
 
 ## Development
@@ -130,11 +130,11 @@ To modify the extension:
 ## Future Enhancements
 
 - [ ] OAuth GitHub authentication for higher API rate limits
-- [ ] Export/import subscriptions
-- [ ] Browser action badge showing subscription count
+- [ ] Export/import bookmarks
+- [ ] Browser action badge showing bookmark count
 - [ ] Filter by state (open/closed)
-- [ ] Search subscriptions
-- [ ] Bulk unsubscribe
+- [ ] Search bookmarks
+- [ ] Bulk unbookmark
 
 ## Browser Compatibility
 

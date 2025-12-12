@@ -3,34 +3,34 @@ if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
   globalThis.browser = chrome;
 }
 
-// Background service worker for managing subscribed issues storage
+// Background service worker for managing bookmarked issues storage
 
-// Storage key for subscribed issues
-const STORAGE_KEY = 'subscribed_issues';
+// Storage key for bookmarked issues
+const STORAGE_KEY = 'bookmarked_issues';
 
-// Get all subscribed issues
-async function getSubscribedIssues() {
+// Get all bookmarked issues
+async function getBookmarkedIssues() {
   const result = await browser.storage.sync.get(STORAGE_KEY);
   return result[STORAGE_KEY] || {};
 }
 
-// Add a subscribed issue
-async function addSubscription(issueData) {
-  const subscriptions = await getSubscribedIssues();
+// Add a bookmarked issue
+async function addBookmark(issueData) {
+  const bookmarks = await getBookmarkedIssues();
 
   // Store minimal data to stay under storage limits
-  subscriptions[issueData.id] = {
+  bookmarks[issueData.id] = {
     owner: issueData.owner,
     repo: issueData.repo,
     number: issueData.number,
     type: issueData.type,
-    subscribedAt: issueData.subscribedAt
+    bookmarkedAt: issueData.bookmarkedAt
   };
 
-  await browser.storage.sync.set({ [STORAGE_KEY]: subscriptions });
+  await browser.storage.sync.set({ [STORAGE_KEY]: bookmarks });
 
-  console.log('[Background] Added subscription:', issueData.id);
-  console.log('[Background] Total subscriptions:', Object.keys(subscriptions).length);
+  console.log('[Background] Added bookmark:', issueData.id);
+  console.log('[Background] Total bookmarks:', Object.keys(bookmarks).length);
 
   // Check storage usage
   const bytesInUse = await browser.storage.sync.getBytesInUse(STORAGE_KEY);
@@ -40,64 +40,64 @@ async function addSubscription(issueData) {
     console.warn('[Background] Approaching storage limit!', bytesInUse, '/ 102400 bytes');
   }
 
-  return { success: true, totalSubscriptions: Object.keys(subscriptions).length };
+  return { success: true, totalBookmarks: Object.keys(bookmarks).length };
 }
 
-// Remove a subscribed issue
-async function removeSubscription(issueId) {
-  const subscriptions = await getSubscribedIssues();
+// Remove a bookmarked issue
+async function removeBookmark(issueId) {
+  const bookmarks = await getBookmarkedIssues();
 
-  if (subscriptions[issueId]) {
-    delete subscriptions[issueId];
-    await browser.storage.sync.set({ [STORAGE_KEY]: subscriptions });
-    console.log('[Background] Removed subscription:', issueId);
+  if (bookmarks[issueId]) {
+    delete bookmarks[issueId];
+    await browser.storage.sync.set({ [STORAGE_KEY]: bookmarks });
+    console.log('[Background] Removed bookmark:', issueId);
   }
 
-  return { success: true, totalSubscriptions: Object.keys(subscriptions).length };
+  return { success: true, totalBookmarks: Object.keys(bookmarks).length };
 }
 
 // Listen for messages from content script and popup
 browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
   console.log('[Background] Received message:', message.type);
 
-  if (message.type === 'SUBSCRIBE_ISSUE') {
-    addSubscription(message.data)
+  if (message.type === 'BOOKMARK_ISSUE') {
+    addBookmark(message.data)
       .then(sendResponse)
       .catch(error => {
-        console.error('[Background] Error adding subscription:', error);
+        console.error('[Background] Error adding bookmark:', error);
         sendResponse({ success: false, error: error.message });
       });
     return true; // Indicates async response
   }
 
-  if (message.type === 'UNSUBSCRIBE_ISSUE') {
-    removeSubscription(message.data.id)
+  if (message.type === 'UNBOOKMARK_ISSUE') {
+    removeBookmark(message.data.id)
       .then(sendResponse)
       .catch(error => {
-        console.error('[Background] Error removing subscription:', error);
+        console.error('[Background] Error removing bookmark:', error);
         sendResponse({ success: false, error: error.message });
       });
     return true;
   }
 
-  if (message.type === 'GET_SUBSCRIPTIONS') {
-    getSubscribedIssues()
-      .then(subscriptions => sendResponse({ subscriptions }))
+  if (message.type === 'GET_BOOKMARKS') {
+    getBookmarkedIssues()
+      .then(bookmarks => sendResponse({ bookmarks }))
       .catch(error => {
-        console.error('[Background] Error getting subscriptions:', error);
-        sendResponse({ subscriptions: {}, error: error.message });
+        console.error('[Background] Error getting bookmarks:', error);
+        sendResponse({ bookmarks: {}, error: error.message });
       });
     return true;
   }
 
   if (message.type === 'GET_STORAGE_INFO') {
     Promise.all([
-      getSubscribedIssues(),
+      getBookmarkedIssues(),
       browser.storage.sync.getBytesInUse(STORAGE_KEY)
     ])
-      .then(([subscriptions, bytesInUse]) => {
+      .then(([bookmarks, bytesInUse]) => {
         sendResponse({
-          count: Object.keys(subscriptions).length,
+          count: Object.keys(bookmarks).length,
           bytesInUse,
           bytesRemaining: 102400 - bytesInUse,
           percentUsed: (bytesInUse / 102400 * 100).toFixed(1)
