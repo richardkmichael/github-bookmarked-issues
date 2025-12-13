@@ -220,27 +220,71 @@ async function fetchIssueDetails(owner, repo, number, type) {
   }
 }
 
-// Create a bookmarks view container
+// Create a bookmarks view container with GitHub's native structure
 function createBookmarksView() {
   const container = document.createElement('div');
   container.setAttribute('data-extension-bookmarks-container', 'true');
-  container.style.cssText = `
-    display: none;
-  `;
+  container.style.cssText = 'display: none;';
+
+  // Main content wrapper matching GitHub's structure
   container.innerHTML = `
-    <div style="padding: 16px; border-bottom: 1px solid var(--borderColor-default);">
-      <input type="text" id="bookmarks-filter" placeholder="Filter by repo or title..."
-        style="width: 100%; padding: 8px 12px; border: 1px solid var(--borderColor-default); border-radius: 6px; font-size: 14px;">
+    <div class="prc-PageLayout-ContentWrapper-b-QRo" data-is-hidden="false">
+      <div class="prc-PageLayout-Content--F7-I" data-width="full" style="--spacing: var(--spacing-none);">
+        <div class="ThreePanesLayout-module__ThreePanesLayoutMiddleOnlyPane--uNVJC">
+          <div class="Box-sc-62in7e-0 pKvlx">
+            <div data-testid="list-header">
+              <div class="Header-module__HeaderListContainer--KyKxD">
+                <div class="HeaderContent-module__HeaderContentContainer--VW7Bw">
+                  <div class="HeaderContent-module__displayModeContainer--cJT14">
+                    <span class="HeaderContent-module__titleOptionsRow--hPAtk">
+                      <h1 class="HeaderContent-module__Heading--uCBAw prc-Heading-Heading-6CmGO">Bookmarks</h1>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="Search-module__SearchContainer--CkrWX">
+              <div class="SearchBar-module__gap8--tZi0W px-0 d-block flex-row flex-justify-between">
+                <div class="SearchBar-module__filterContainer--XzLet SearchBar-module__gap8--tZi0W d-flex flex-row flex-1 flexWrap min-width-0">
+                  <div class="SearchBar-module__filter--uooUm d-flex flex-1 flex-column">
+                    <div class="FormControl FormControl--fullWidth">
+                      <label for="bookmarks-filter" class="FormControl-label sr-only">Filter bookmarks</label>
+                      <input type="text" id="bookmarks-filter" class="FormControl-input Input-module__Box_4--DZrl_" placeholder="Filter by repo or title..." autocomplete="off">
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <div class="ListItems-module__listContainer--sgptj">
+                  <div class="ListItems-module__listScopedCommand--GGPXX">
+                    <div id="bookmarks-list-container" class="ListView-module__container--rxCWy">
+                      <h2 class="sr-only prc-Heading-Heading-6CmGO">Bookmarked issues</h2>
+                      <div id="bookmarks-results-section" class="Metadata-module__container--ydeM8 ListItemsHeaderWithoutBulkActions-module__ListViewMetadata_0--oA0Cm" style="display: none;">
+                        <h3 id="bookmarks-count" class="Metadata-module__heading--vvkcl"></h3>
+                        <div role="toolbar" aria-label="Actions" class="VisibleAndOverflowContainer-module__Box_0--KyT2b" style="gap: var(--base-size-4);">
+                          <div class="VisibleItems-module__Box_1--LOtDr" style="gap: var(--base-size-4);">
+                            <div data-action-bar-item="spinner" class="VisibleItem-module__Box_0--BsJkb"></div>
+                          </div>
+                        </div>
+                      </div>
+                      <ul id="bookmarks-list" class="ListView-module__ul--A_8jF" role="list" data-listview-component="items-list" data-density="default" tabindex="-1" aria-labelledby="bookmarks-list-container"></ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div id="bookmarks-loading" style="padding: 40px 20px; text-align: center; color: var(--fgColor-muted); display: none;">
+              Loading bookmarks...
+            </div>
+            <div id="bookmarks-error" style="padding: 16px; color: #cf222e; background-color: #ffebe9; border: 1px solid #ff8182; border-radius: 6px; margin: 16px; display: none;"></div>
+            <div id="bookmarks-empty" style="padding: 40px 20px; text-align: center; color: var(--fgColor-muted); display: none;">
+              <div style="font-size: 14px; margin-bottom: 8px;">No bookmarked issues yet</div>
+              <div style="font-size: 12px;">Visit any issue page and click the bookmark button to get started</div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-    <div id="bookmarks-loading" style="padding: 40px 20px; text-align: center; color: var(--fgColor-muted); display: none;">
-      Loading bookmarks...
-    </div>
-    <div id="bookmarks-error" style="padding: 16px; color: #cf222e; background-color: #ffebe9; border: 1px solid #ff8182; border-radius: 6px; margin: 16px; display: none;"></div>
-    <div id="bookmarks-empty" style="padding: 40px 20px; text-align: center; color: var(--fgColor-muted); display: none;">
-      <div style="font-size: 14px; margin-bottom: 8px;">No bookmarked issues yet</div>
-      <div style="font-size: 12px;">Visit any issue page and click the bookmark button to get started</div>
-    </div>
-    <ul id="bookmarks-list" style="list-style: none; padding: 0; margin: 0;"></ul>
   `;
   return container;
 }
@@ -460,6 +504,15 @@ async function loadAndRenderBookmarks() {
 
     // Sort by updated date
     validIssues.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+
+    // Update result count and show results section
+    const resultsSection = container.querySelector('#bookmarks-results-section');
+    const countHeading = container.querySelector('#bookmarks-count');
+    if (resultsSection && countHeading) {
+      const count = validIssues.length;
+      countHeading.textContent = `${count} result${count !== 1 ? 's' : ''}`;
+      resultsSection.style.display = 'flex';
+    }
 
     // Render all issues
     validIssues.forEach(issue => {
