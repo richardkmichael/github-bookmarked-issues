@@ -249,7 +249,7 @@ function createBookmarksView() {
                   <div class="SearchBar-module__filter--uooUm d-flex flex-1 flex-column">
                     <div class="FormControl FormControl--fullWidth">
                       <label for="bookmarks-filter" class="FormControl-label sr-only">Filter bookmarks</label>
-                      <input type="text" id="bookmarks-filter" class="FormControl-input Input-module__Box_4--DZrl_" placeholder="Filter by repo or title..." autocomplete="off">
+                      <input type="text" id="bookmarks-filter" class="FormControl-input Input-module__Box_4--DZrl_" placeholder="Filter by issue title..." autocomplete="off">
                     </div>
                   </div>
                 </div>
@@ -637,6 +637,27 @@ function isBookmarksViewActive() {
   return window.location.pathname === '/issues/bookmarks';
 }
 
+// Check if we're on a GitHub 404 page
+function is404Page() {
+  // Check page title (most reliable)
+  if (document.title.includes('Page not found')) {
+    return true;
+  }
+
+  // Check for 404 image
+  const img404 = document.querySelector('main img[alt*="404"]');
+  if (img404) {
+    return true;
+  }
+
+  // Check if application-main exists (404 pages don't have the React app container)
+  if (!document.querySelector('div.application-main')) {
+    return true;
+  }
+
+  return false;
+}
+
 // Handle navigation via back/forward buttons (popstate)
 function handleNavigation() {
   const pathname = window.location.pathname;
@@ -653,6 +674,12 @@ function handleNavigation() {
 // Initialize the script
 function init() {
   console.log('[Bookmarks] Initializing content script for /issues page');
+
+  // Don't inject custom markup on 404 pages
+  if (is404Page()) {
+    console.log('[Bookmarks] 404 page detected, skipping initialization');
+    return;
+  }
 
   // Start stable observer that watches a permanent parent element and handles:
   // - Nav item injection (with automatic recovery from React re-renders)
