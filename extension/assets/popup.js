@@ -1,3 +1,6 @@
+// Import relative-time-element to register the custom element
+import './vendor/relative-time-element.js';
+
 // Cross-browser compatibility: alias chrome to browser in Chrome
 if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
   globalThis.browser = chrome;
@@ -113,7 +116,7 @@ async function displayIssues(bookmarks) {
         <div class="issue-meta">
           <span>${escapeHtml(issue.repository?.full_name || `${issue.url.split('/')[4]}/${issue.url.split('/')[5]}`)}</span>
           <span>#${issue.number}</span>
-          <span>· Updated ${formatDate(issue.updated_at)}</span>
+          <span>· Updated <relative-time datetime="${issue.updated_at}">${formatDate(issue.updated_at)}</relative-time></span>
           ${issue.comments > 0 ? `<div class="comments"><span class="comments-icon">${commentIcon}</span>${issue.comments}</div>` : ''}
         </div>
       </div>
