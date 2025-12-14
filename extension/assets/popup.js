@@ -59,10 +59,12 @@ async function displayIssues(bookmarks) {
   const emptyStateEl = document.getElementById('empty-state');
 
   const bookmarkIds = Object.keys(bookmarks);
+  const copyAllBtn = document.getElementById('copy-all-btn');
 
   if (bookmarkIds.length === 0) {
     loadingEl.style.display = 'none';
     emptyStateEl.style.display = 'block';
+    copyAllBtn.disabled = true;
     return;
   }
 
@@ -79,6 +81,7 @@ async function displayIssues(bookmarks) {
 
   if (validIssues.length === 0) {
     emptyStateEl.style.display = 'block';
+    copyAllBtn.disabled = true;
     return;
   }
 
@@ -87,25 +90,32 @@ async function displayIssues(bookmarks) {
 
   containerEl.innerHTML = '';
 
+  const openIcon = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" color="var(--fgColor-open)"><path fill="currentColor" d="M8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z"></path><path fill="currentColor" d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Z"></path></svg>';
+  const closedIcon = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" color="var(--fgColor-done)"><path fill="currentColor" d="M11.28 6.78a.75.75 0 0 0-1.06-1.06L7.25 8.69 5.78 7.22a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l3.5-3.5Z"></path><path fill="currentColor" d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0Zm-1.5 0a6.5 6.5 0 1 0-13 0 6.5 6.5 0 0 0 13 0Z"></path></svg>';
+  const commentIcon = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16"><path fill="currentColor" d="M1 2.75C1 1.784 1.784 1 2.75 1h10.5c.966 0 1.75.784 1.75 1.75v7.5A1.75 1.75 0 0 1 13.25 12H9.06l-2.573 2.573A1.458 1.458 0 0 1 4 13.543V12H2.75A1.75 1.75 0 0 1 1 10.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h2a.75.75 0 0 1 .75.75v2.19l2.72-2.72a.749.749 0 0 1 .53-.22h4.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg>';
+
   validIssues.forEach(issue => {
     const issueEl = document.createElement('div');
     issueEl.className = 'issue-item';
 
-    const stateIcon = issue.state === 'open' ? '●' : '✓';
-    const stateColor = issue.state === 'open' ? '#1a7f37' : '#8250df';
+    const stateIcon = issue.state === 'open' ? openIcon : closedIcon;
 
     issueEl.innerHTML = `
-      <div class="issue-title">
-        <a href="${issue.html_url}" target="_blank" rel="noopener noreferrer">
-          ${escapeHtml(issue.title)}
-        </a>
+      <div class="state-icon">
+        ${stateIcon}
       </div>
-      <div class="issue-meta">
-        <span>${escapeHtml(issue.repository?.full_name || `${issue.url.split('/')[4]}/${issue.url.split('/')[5]}`)}</span>
-        <span>#${issue.number}</span>
-        <span style="color: ${stateColor}">${stateIcon} ${issue.state}</span>
-        <span>Updated ${formatDate(issue.updated_at)}</span>
-        ${issue.comments > 0 ? `<span>💬 ${issue.comments}</span>` : ''}
+      <div>
+        <div class="issue-title">
+          <a href="${issue.html_url}" target="_blank" rel="noopener noreferrer">
+            ${escapeHtml(issue.title)}
+          </a>
+        </div>
+        <div class="issue-meta">
+          <span>${escapeHtml(issue.repository?.full_name || `${issue.url.split('/')[4]}/${issue.url.split('/')[5]}`)}</span>
+          <span>#${issue.number}</span>
+          <span>· Updated ${formatDate(issue.updated_at)}</span>
+          ${issue.comments > 0 ? `<div class="comments"><span class="comments-icon">${commentIcon}</span>${issue.comments}</div>` : ''}
+        </div>
       </div>
     `;
 
@@ -118,6 +128,10 @@ async function displayIssues(bookmarks) {
 
     containerEl.appendChild(issueEl);
   });
+
+  // Wire up copy-all button
+  copyAllBtn.disabled = false;
+  copyAllBtn.onclick = () => copyAllToClipboard(validIssues);
 }
 
 // Format date to relative time
@@ -149,6 +163,41 @@ function escapeHtml(text) {
   const div = document.createElement('div');
   div.textContent = text;
   return div.innerHTML;
+}
+
+// Escape square brackets in Markdown to prevent breaking link syntax
+function escapeMarkdownBrackets(text) {
+  return text.replace(/\[/g, '\\[').replace(/\]/g, '\\]');
+}
+
+// Copy all bookmarked issues to clipboard as Markdown list
+async function copyAllToClipboard(issues) {
+  const markdown = issues
+    .map(issue => `- [${escapeMarkdownBrackets(issue.title)}](${issue.html_url})`)
+    .join('\n');
+
+  try {
+    await navigator.clipboard.writeText(markdown);
+
+    // Show success feedback
+    const button = document.getElementById('copy-all-btn');
+    const clipboardIcon = document.getElementById('clipboard-icon');
+    const checkIcon = document.getElementById('check-icon');
+
+    button.classList.add('success');
+    clipboardIcon.style.display = 'none';
+    checkIcon.style.display = 'block';
+
+    // Reset after 2 seconds
+    setTimeout(() => {
+      button.classList.remove('success');
+      clipboardIcon.style.display = 'block';
+      checkIcon.style.display = 'none';
+    }, 2000);
+  } catch (err) {
+    console.error('[Popup] Failed to copy to clipboard:', err);
+    showError('Failed to copy to clipboard');
+  }
 }
 
 // Show error message
