@@ -29,7 +29,6 @@
   },
   "background": {
     "service_worker": "assets/background.js",
-    "scripts": ["assets/background.js"],
     "type": "module"
   },
   "content_scripts": [
