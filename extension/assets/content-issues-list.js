@@ -9,11 +9,11 @@ if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
 // Reference to our injected nav item
 let bookmarkNavItem = null;
 
-// Inject the "Bookmarks" navigation item into the sidebar
+// Inject the "Bookmarked" navigation item into the sidebar
 function injectSidebarNavItem() {
   const navList = document.querySelector('nav[aria-label="Default views"] ul');
   if (!navList) {
-    console.warn('[Bookmarks] Sidebar nav list not found');
+    console.warn('[Bookmarked] Sidebar nav list not found');
     return false;
   }
 
@@ -32,14 +32,14 @@ function injectSidebarNavItem() {
   link.className = 'prc-ActionList-ActionListContent-sg9-x prc-Link-Link-85e08';
   link.setAttribute('tabindex', '0');
   link.setAttribute('data-size', 'medium');
-  link.href = '/issues/bookmarks';
+  link.href = '/issues/bookmarked';
   link.style.setProperty('--subitem-depth', '0');
 
   // Navigate to bookmarks view using History API (no React routing)
   link.addEventListener('click', (e) => {
     e.preventDefault();
     e.stopPropagation();
-    history.pushState(null, null, '/issues/bookmarks');
+    history.pushState(null, null, '/issues/bookmarked');
     showBookmarksView();
     activateBookmarksNavItem();
   });
@@ -66,7 +66,7 @@ function injectSidebarNavItem() {
 
   const text = document.createElement('span');
   text.className = 'SavedViewItem-module__truncatedItemText--Pkqut';
-  text.textContent = 'Bookmarks';
+  text.textContent = 'Bookmarked';
 
   // Assemble structure
   itemText.appendChild(icon);
@@ -81,7 +81,7 @@ function injectSidebarNavItem() {
   navList.appendChild(li);
   bookmarkNavItem = li;
 
-  console.log('[Bookmarks] Nav item injected with proper structure');
+  console.log('[Bookmarked] Nav item injected with proper structure');
   return true;
 }
 
@@ -127,7 +127,7 @@ function setupStableObserver() {
 
   const stableParent = document.querySelector(STABLE_PARENT_SELECTOR);
   if (!stableParent) {
-    console.warn('[Bookmarks] Stable parent not found');
+    console.warn('[Bookmarked] Stable parent not found');
     return;
   }
 
@@ -153,7 +153,7 @@ function setupStableObserver() {
     characterData: true
   });
 
-  console.log('[Bookmarks] Stable observer started on', STABLE_PARENT_SELECTOR);
+  console.log('[Bookmarked] Stable observer started on', STABLE_PARENT_SELECTOR);
 
   // Initial setup with requestAnimationFrame
   requestAnimationFrame(() => {
@@ -215,7 +215,7 @@ async function fetchIssueDetails(owner, repo, number, type) {
 
     return await response.json();
   } catch (error) {
-    console.error('[Bookmarks] Error fetching issue details:', error);
+    console.error('[Bookmarked] Error fetching issue details:', error);
     return null;
   }
 }
@@ -237,7 +237,7 @@ function createBookmarksView() {
                 <div class="HeaderContent-module__HeaderContentContainer--VW7Bw">
                   <div class="HeaderContent-module__displayModeContainer--cJT14">
                     <span class="HeaderContent-module__titleOptionsRow--hPAtk">
-                      <h1 class="HeaderContent-module__Heading--uCBAw prc-Heading-Heading-6CmGO">Bookmarks</h1>
+                      <h1 class="HeaderContent-module__Heading--uCBAw prc-Heading-Heading-6CmGO">Bookmarked</h1>
                     </span>
                   </div>
                 </div>
@@ -248,7 +248,7 @@ function createBookmarksView() {
                 <div class="SearchBar-module__filterContainer--XzLet SearchBar-module__gap8--tZi0W d-flex flex-row flex-1 flexWrap min-width-0">
                   <div class="SearchBar-module__filter--uooUm d-flex flex-1 flex-column">
                     <div class="FormControl FormControl--fullWidth">
-                      <label for="bookmarks-filter" class="FormControl-label sr-only">Filter bookmarks</label>
+                      <label for="bookmarks-filter" class="FormControl-label sr-only">Filter bookmarked issues</label>
                       <input type="text" id="bookmarks-filter" class="FormControl-input Input-module__Box_4--DZrl_" placeholder="Filter by issue title..." autocomplete="off">
                     </div>
                   </div>
@@ -274,7 +274,7 @@ function createBookmarksView() {
               </div>
             </div>
             <div id="bookmarks-loading" style="padding: 40px 20px; text-align: center; color: var(--fgColor-muted); display: none;">
-              Loading bookmarks...
+              Loading bookmarked issues...
             </div>
             <div id="bookmarks-error" style="padding: 16px; color: #cf222e; background-color: #ffebe9; border: 1px solid #ff8182; border-radius: 6px; margin: 16px; display: none;"></div>
             <div id="bookmarks-empty" style="padding: 40px 20px; text-align: center; color: var(--fgColor-muted); display: none;">
@@ -298,7 +298,7 @@ async function getBookmarks() {
     }
     return response.bookmarks || {};
   } catch (error) {
-    console.error('[Bookmarks] Error getting bookmarks:', error);
+    console.error('[Bookmarked] Error getting bookmarks:', error);
     throw error;
   }
 }
@@ -524,10 +524,10 @@ async function loadAndRenderBookmarks() {
     setupFilterInput();
 
   } catch (error) {
-    console.error('[Bookmarks] Error loading bookmarks:', error);
+    console.error('[Bookmarked] Error loading bookmarks:', error);
     loadingEl.style.display = 'none';
     errorEl.style.display = 'block';
-    errorEl.textContent = `Failed to load bookmarks: ${error.message}`;
+    errorEl.textContent = `Failed to load bookmarked issues: ${error.message}`;
   }
 }
 
@@ -565,9 +565,9 @@ function getMainContent() {
 
 // Show the bookmarks view
 function showBookmarksView() {
-  // Use History API if not already at /issues/bookmarks
-  if (window.location.pathname !== '/issues/bookmarks') {
-    history.pushState(null, null, '/issues/bookmarks');
+  // Use History API if not already at /issues/bookmarked
+  if (window.location.pathname !== '/issues/bookmarked') {
+    history.pushState(null, null, '/issues/bookmarked');
   }
 
   // Activate bookmarks nav item
@@ -634,7 +634,7 @@ function updateNavItemActiveState(isActive) {
 
 // Check if bookmarks view is currently active
 function isBookmarksViewActive() {
-  return window.location.pathname === '/issues/bookmarks';
+  return window.location.pathname === '/issues/bookmarked';
 }
 
 // Check if we're on a GitHub 404 page
@@ -662,7 +662,7 @@ function is404Page() {
 function handleNavigation() {
   const pathname = window.location.pathname;
 
-  if (pathname === '/issues/bookmarks') {
+  if (pathname === '/issues/bookmarked') {
     // User navigated to bookmarks (via back/forward or direct URL)
     showBookmarksView();
   } else if (pathname.startsWith('/issues/')) {
@@ -673,29 +673,47 @@ function handleNavigation() {
 
 // Initialize the script
 function init() {
-  console.log('[Bookmarks] Initializing content script for /issues page');
+  console.log('[Bookmarked] Initializing content script for /issues page');
 
-  // Don't inject custom markup on 404 pages
-  if (is404Page()) {
-    console.log('[Bookmarks] 404 page detected, skipping initialization');
+  // Handle direct navigation to /issues/bookmarked (which results in 404) via redirect to /issues
+  // and a flag to auto-show Bookmarked view
+  if (window.location.pathname === '/issues/bookmarked' && is404Page()) {
+    console.log('[Bookmarked] 404 detected at /issues/bookmarked, redirecting to /issues');
+    sessionStorage.setItem('github-bookmarks-show', 'true');
+    window.location.replace('/issues');
     return;
+  }
+
+  // Check if we should auto-show bookmarks (after redirect from 404)
+  const shouldShowBookmarks = sessionStorage.getItem('github-bookmarks-show') === 'true';
+  if (shouldShowBookmarks) {
+    sessionStorage.removeItem('github-bookmarks-show');
+    console.log('[Bookmarked] Auto-showing bookmarks after redirect from 404');
   }
 
   // Start stable observer that watches a permanent parent element and handles:
   // - Nav item injection (with automatic recovery from React re-renders)
-  // - Bookmarks view container injection (with recovery)
+  // - Bookmarked view container injection (with recovery)
   // - Active state management
   setupStableObserver();
 
   // Set up event listener for back/forward button navigation
   window.addEventListener('popstate', handleNavigation);
 
-  // Check initial pathname on page load
-  if (window.location.pathname === '/issues/bookmarks') {
-    showBookmarksView();
+  // Check initial pathname on page load OR if we should auto-show after redirect
+  if (window.location.pathname === '/issues/bookmarked' || shouldShowBookmarks) {
+    if (shouldShowBookmarks) {
+      // Need to wait for DOM to be ready and update URL
+      setTimeout(() => {
+        history.pushState(null, null, '/issues/bookmarked');
+        showBookmarksView();
+      }, 200);
+    } else {
+      showBookmarksView();
+    }
   }
 
-  console.log('[Bookmarks] Content script initialization complete');
+  console.log('[Bookmarked] Content script initialization complete');
 }
 
 // Wait for DOM to be ready
