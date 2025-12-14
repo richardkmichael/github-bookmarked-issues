@@ -41,6 +41,7 @@ The custom Bookmarks view style must match the GitHub built-in style (CSS).
 
 - https://primer.style
 - We use the "list-view", but it is "internal-use only": https://primer.style/product/internal-components/list-view/
+- Icons are GitHub's Octicons: https://primer.style/octicons/
 
 # DOM Structure Requirements
 
@@ -111,3 +112,67 @@ When modifying the Bookmarks view styling:
 3. **Incorrect nesting**: List container must be INSIDE search container, not a sibling
 4. **Missing wrapper divs**: GitHub uses plain wrapper `<div>`s for spacing - don't skip them
 5. **CSS class names**: These are CSS modules with generated hash suffixes - copy exactly
+
+# Dependencies and Modules
+
+## Manifest V3 Content Security Policy
+
+The extension uses Manifest V3, which has strict Content Security Policy (CSP) restrictions:
+
+- **No external CDN scripts** - CSP: `script-src 'self'` blocks external URLs
+- **No inline scripts** - Inline `<script>` tags are blocked
+- **Solution**: Bundle dependencies locally and use ES modules
+
+## Bundled Dependencies Pattern
+
+External libraries must be bundled locally in `extension/assets/vendor/`:
+
+**Example: relative-time-element**
+```bash
+# One-time build process
+cd tmp/relative-time-element
+npm install
+npm run build
+cp dist/bundle.js extension/assets/vendor/relative-time-element.js
+```
+
+**Loading as ES Module:**
+```javascript
+// In popup.js (as a module)
+import './vendor/relative-time-element.js';
+```
+
+**HTML:**
+```html
+<script type="module" src="popup.js"></script>
+```
+
+## Module Loading Requirements
+
+- **Extension pages (popup, options)**: Must use ES modules to import dependencies
+- **Content scripts**: Can use regular scripts, but modules preferred for dependencies
+- **Background service worker**: Configured as module in manifest.json
+
+## Debugging Extension Popup
+
+Since the popup runs in an isolated context:
+
+1. **Right-click in popup → Inspect** - Opens DevTools for popup
+2. **chrome://extensions → Inspect views** - Click when popup is open
+3. **Console debugging**:
+   ```javascript
+   // Check if custom element is defined
+   customElements.get('relative-time')
+
+   // Check module loading
+   document.querySelector('script[type="module"]')
+   ```
+
+## Date Formatting
+
+The extension uses GitHub's `relative-time-element` web component for human-friendly dates:
+
+- Displays "2 weeks ago" instead of "2mo ago"
+- Auto-updates as time passes
+- Fallback: `formatDate()` function provides initial text content
+- Elements upgrade automatically after creation (custom elements spec)
