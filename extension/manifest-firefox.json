@@ -1,6 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/chrome-manifest",
-  "name": "GitHub Bookmarked Issues Tracker",
+  "name": "GitHub Bookmarked Issues",
   "version": "1.0.0",
   "description": "Track your bookmarked GitHub issues across all repositories with cross-device sync",
   "manifest_version": 3,
@@ -28,7 +28,7 @@
     "128": "assets/icon.svg"
   },
   "background": {
-    "service_worker": "assets/background.js",
+    "scripts": ["assets/background.js"],
     "type": "module"
   },
   "content_scripts": [

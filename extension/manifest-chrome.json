@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json.schemastore.org/chrome-manifest",
+  "name": "GitHub Bookmarked Issues",
+  "version": "1.0.0",
+  "description": "Track your bookmarked GitHub issues across all repositories with cross-device sync",
+  "manifest_version": 3,
+  "minimum_chrome_version": "123",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "github-bookmarked-issues@extensions",
+      "strict_min_version": "128.0"
+    }
+  },
+  "permissions": [
+    "storage"
+  ],
+  "host_permissions": [
+    "https://github.com/*",
+    "https://api.github.com/*"
+  ],
+  "action": {
+    "default_popup": "assets/popup.html",
+    "default_icon": {
+      "128": "assets/icon.svg"
+    }
+  },
+  "icons": {
+    "128": "assets/icon.svg"
+  },
+  "background": {
+    "service_worker": "assets/background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "run_at": "document_end",
+      "matches": [
+        "https://github.com/*/*/issues/*",
+        "https://github.com/*/*/pull/*"
+      ],
+      "js": [
+        "assets/content.js"
+      ]
+    },
+    {
+      "run_at": "document_end",
+      "matches": [
+        "https://github.com/issues",
+        "https://github.com/issues/*"
+      ],
+      "js": [
+        "assets/content-issues-list.js"
+      ]
+    }
+  ]
+}
