@@ -1,0 +1,12 @@
+# Dependencies
+node_modules/
+
+# Build output
+build/
+
+# Test output
+test-results/
+playwright-report/
+
+# OS files
+.DS_Store

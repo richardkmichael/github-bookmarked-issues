@@ -1,0 +1,27 @@
+{
+  "name": "github-bookmarked-issues",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "clean": "rm -rf build/",
+    "prebuild": "npm run clean",
+    "build:chrome": "node scripts/copy.js chrome && node scripts/build.js chrome && node scripts/package.js chrome",
+    "build:firefox": "node scripts/copy.js firefox && node scripts/build.js firefox && node scripts/package.js firefox",
+    "build": "npm run build:chrome && npm run build:firefox",
+    "postbuild": "npm run lint",
+    "lint": "web-ext lint --source-dir=extension --artifacts-dir=build --ignore-files='manifest-*.json' --ignore-files='assets/vendor/' && npm run lint:manifests",
+    "lint:manifests": "web-ext lint --source-dir=build/chrome --artifacts-dir=build && web-ext lint --source-dir=build/firefox --artifacts-dir=build",
+    "test": "playwright test",
+    "test:chrome": "playwright test --project=chromium",
+    "version:bump": "node scripts/bump.js",
+    "package": "npm run build"
+  },
+  "dependencies": {
+    "@github/relative-time-element": "5.0.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.48.0",
+    "web-ext": "^8.3.0"
+  }
+}
