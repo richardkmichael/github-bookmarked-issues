@@ -32,22 +32,28 @@ async function fetchIssueDetails(owner, repo, number, type) {
   }
 }
 
+// Get icon from template
+function getIcon(name) {
+  const template = document.getElementById(`icon-${name}`);
+  return template.content.cloneNode(true).firstChild;
+}
+
 // Display storage information
 async function displayStorageInfo() {
   try {
     const response = await browser.runtime.sendMessage({ type: 'GET_STORAGE_INFO' });
 
-    const storageInfoEl = document.getElementById('storage-info');
+    const storageInfo = document.getElementById('storage-info');
     if (response.error) {
-      storageInfoEl.textContent = 'Storage info unavailable';
+      storageInfo.textContent = 'Storage info unavailable';
       return;
     }
 
-    storageInfoEl.textContent = `${response.count} bookmarks • ${response.percentUsed}% of storage used`;
+    storageInfo.textContent = `${response.count} bookmarks • ${response.percentUsed}% of storage used`;
 
     if (response.percentUsed > 90) {
-      storageInfoEl.style.color = '#cf222e';
-      storageInfoEl.textContent += ' ⚠️ Approaching limit!';
+      storageInfo.style.color = '#cf222e';
+      storageInfo.textContent += ' ⚠️ Approaching limit!';
     }
   } catch (error) {
     console.error('[Popup] Error displaying storage info:', error);
@@ -56,17 +62,17 @@ async function displayStorageInfo() {
 
 // Display issues in the popup
 async function displayIssues(bookmarks) {
-  const loadingEl = document.getElementById('loading');
-  const errorEl = document.getElementById('error');
-  const containerEl = document.getElementById('issues-container');
-  const emptyStateEl = document.getElementById('empty-state');
+  const loading = document.getElementById('loading');
+  const error = document.getElementById('error');
+  const container = document.getElementById('issues-container');
+  const emptyState = document.getElementById('empty-state');
 
   const bookmarkIds = Object.keys(bookmarks);
   const copyAllBtn = document.getElementById('copy-all-btn');
 
   if (bookmarkIds.length === 0) {
-    loadingEl.style.display = 'none';
-    emptyStateEl.style.display = 'block';
+    loading.style.display = 'none';
+    emptyState.style.display = 'block';
     copyAllBtn.disabled = true;
     return;
   }
@@ -80,10 +86,10 @@ async function displayIssues(bookmarks) {
   const issues = await Promise.all(issuePromises);
   const validIssues = issues.filter(issue => issue !== null);
 
-  loadingEl.style.display = 'none';
+  loading.style.display = 'none';
 
   if (validIssues.length === 0) {
-    emptyStateEl.style.display = 'block';
+    emptyState.style.display = 'block';
     copyAllBtn.disabled = true;
     return;
   }
@@ -91,45 +97,47 @@ async function displayIssues(bookmarks) {
   // Sort by updated date (most recent first)
   validIssues.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
 
-  containerEl.innerHTML = '';
-
-  const openIcon = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" color="var(--fgColor-open)"><path fill="currentColor" d="M8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z"></path><path fill="currentColor" d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Z"></path></svg>';
-  const closedIcon = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" color="var(--fgColor-done)"><path fill="currentColor" d="M11.28 6.78a.75.75 0 0 0-1.06-1.06L7.25 8.69 5.78 7.22a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l3.5-3.5Z"></path><path fill="currentColor" d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0Zm-1.5 0a6.5 6.5 0 1 0-13 0 6.5 6.5 0 0 0 13 0Z"></path></svg>';
-  const commentIcon = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16"><path fill="currentColor" d="M1 2.75C1 1.784 1.784 1 2.75 1h10.5c.966 0 1.75.784 1.75 1.75v7.5A1.75 1.75 0 0 1 13.25 12H9.06l-2.573 2.573A1.458 1.458 0 0 1 4 13.543V12H2.75A1.75 1.75 0 0 1 1 10.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h2a.75.75 0 0 1 .75.75v2.19l2.72-2.72a.749.749 0 0 1 .53-.22h4.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg>';
+  container.replaceChildren();
 
   validIssues.forEach(issue => {
-    const issueEl = document.createElement('div');
-    issueEl.className = 'issue-item';
+    const template = document.getElementById('issue-item');
+    const item = template.content.cloneNode(true);
 
-    const stateIcon = issue.state === 'open' ? openIcon : closedIcon;
+    // Populate state icon
+    const stateIcon = item.querySelector('.state-icon');
+    stateIcon.appendChild(getIcon(issue.state === 'open' ? 'open' : 'closed'));
 
-    issueEl.innerHTML = `
-      <div class="state-icon">
-        ${stateIcon}
-      </div>
-      <div>
-        <div class="issue-title">
-          <a href="${issue.html_url}" target="_blank" rel="noopener noreferrer">
-            ${escapeHtml(issue.title)}
-          </a>
-        </div>
-        <div class="issue-meta">
-          <span>${escapeHtml(issue.repository?.full_name || `${issue.url.split('/')[4]}/${issue.url.split('/')[5]}`)}</span>
-          <span>#${issue.number}</span>
-          <span>· Updated <relative-time datetime="${issue.updated_at}">${formatDate(issue.updated_at)}</relative-time></span>
-          ${issue.comments > 0 ? `<div class="comments"><span class="comments-icon">${commentIcon}</span>${issue.comments}</div>` : ''}
-        </div>
-      </div>
-    `;
+    // Populate link
+    const link = item.querySelector('a');
+    link.href = issue.html_url;
+    link.textContent = issue.title;
+
+    // Populate metadata
+    const repoName = issue.repository?.full_name || `${issue.url.split('/')[4]}/${issue.url.split('/')[5]}`;
+    item.querySelector('.repo-name').textContent = repoName;
+    item.querySelector('.issue-number').textContent = `#${issue.number}`;
+
+    const relTime = item.querySelector('relative-time');
+    relTime.setAttribute('datetime', issue.updated_at);
+    relTime.textContent = formatDate(issue.updated_at);
+
+    // Handle comments
+    if (issue.comments > 0) {
+      const comments = item.querySelector('.comments');
+      comments.style.display = '';
+      comments.querySelector('.comments-icon').appendChild(getIcon('comment'));
+      comments.querySelector('.comments-count').textContent = issue.comments;
+    }
 
     // Make whole item clickable
-    issueEl.addEventListener('click', (e) => {
+    const issueElement = item.querySelector('.issue-item');
+    issueElement.addEventListener('click', (e) => {
       if (e.target.tagName !== 'A') {
         window.open(issue.html_url, '_blank');
       }
     });
 
-    containerEl.appendChild(issueEl);
+    container.appendChild(item);
   });
 
   // Wire up copy-all button
@@ -159,13 +167,6 @@ function formatDate(dateString) {
 
   const diffInYears = Math.floor(diffInMonths / 12);
   return `${diffInYears}y ago`;
-}
-
-// Escape HTML to prevent XSS
-function escapeHtml(text) {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
 }
 
 // Escape square brackets in Markdown to prevent breaking link syntax
@@ -205,10 +206,10 @@ async function copyAllToClipboard(issues) {
 
 // Show error message
 function showError(message) {
-  const errorEl = document.getElementById('error');
-  errorEl.className = 'error-message';
-  errorEl.textContent = message;
-  errorEl.style.display = 'block';
+  const error = document.getElementById('error');
+  error.className = 'error-message';
+  error.textContent = message;
+  error.style.display = 'block';
 
   document.getElementById('loading').style.display = 'none';
 }

@@ -8,11 +8,32 @@ if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
 (function() {
   'use strict';
 
-  // Octicon SVG paths
-  const ICONS = {
-    bookmark: '<svg aria-hidden="true" focusable="false" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;" class="octicon octicon-bookmark"><path d="M3 2.75C3 1.784 3.784 1 4.75 1h6.5c.966 0 1.75.784 1.75 1.75v11.5a.75.75 0 0 1-1.227.579L8 11.722l-3.773 3.107A.751.751 0 0 1 3 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v9.91l3.023-2.489a.75.75 0 0 1 .954 0l3.023 2.49V2.75a.25.25 0 0 0-.25-.25Z"></path></svg>',
-    bookmarkFilled: '<svg aria-hidden="true" focusable="false" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;" class="octicon octicon-bookmark-filled"><path d="M3 2.75C3 1.784 3.784 1 4.75 1h6.5c.966 0 1.75.784 1.75 1.75v11.5a.75.75 0 0 1-1.227.579L8 11.722l-3.773 3.107A.75.75 0 0 1 3 14.25V2.75Z"></path></svg>'
-  };
+  // Setup icon templates (injected once into page)
+  function setupIconTemplates() {
+    if (document.getElementById('ext-bookmark-icons')) return;
+
+    const container = document.createElement('div');
+    container.id = 'ext-bookmark-icons';
+    container.style.display = 'none';
+
+    const bookmarkTemplate = document.createElement('template');
+    bookmarkTemplate.id = 'icon-bookmark';
+    bookmarkTemplate.innerHTML = '<svg aria-hidden="true" focusable="false" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" style="display: inline-block; overflow: visible; vertical-align: text-bottom;" class="octicon octicon-bookmark"><path d="M3 2.75C3 1.784 3.784 1 4.75 1h6.5c.966 0 1.75.784 1.75 1.75v11.5a.75.75 0 0 1-1.227.579L8 11.722l-3.773 3.107A.751.751 0 0 1 3 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v9.91l3.023-2.489a.75.75 0 0 1 .954 0l3.023 2.49V2.75a.25.25 0 0 0-.25-.25Z"></path></svg>';
+
+    const bookmarkFilledTemplate = document.createElement('template');
+    bookmarkFilledTemplate.id = 'icon-bookmark-filled';
+    bookmarkFilledTemplate.innerHTML = '<svg aria-hidden="true" focusable="false" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" style="display: inline-block; overflow: visible; vertical-align: text-bottom;" class="octicon octicon-bookmark-filled"><path d="M3 2.75C3 1.784 3.784 1 4.75 1h6.5c.966 0 1.75.784 1.75 1.75v11.5a.75.75 0 0 1-1.227.579L8 11.722l-3.773 3.107A.75.75 0 0 1 3 14.25V2.75Z"></path></svg>';
+
+    container.appendChild(bookmarkTemplate);
+    container.appendChild(bookmarkFilledTemplate);
+    document.body.appendChild(container);
+  }
+
+  // Get icon from template
+  function getIcon(name) {
+    const template = document.getElementById(`icon-${name}`);
+    return template.content.cloneNode(true).firstChild;
+  }
 
   // Selector for page header actions (using prefix to avoid CSS module hash)
   const HEADER_ACTIONS_SELECTOR = '[data-component="PH_Actions"] [class*="HeaderMenu-module__menuActionsContainer"]';
@@ -59,7 +80,8 @@ if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
 
   // Update bookmark button icon
   function updateBookmarkButton(button, bookmarked) {
-    button.innerHTML = bookmarked ? ICONS.bookmarkFilled : ICONS.bookmark;
+    const icon = getIcon(bookmarked ? 'bookmark-filled' : 'bookmark');
+    button.replaceChildren(icon);
     button.setAttribute('aria-label', bookmarked ? 'Remove bookmark' : 'Bookmark issue');
   }
 
@@ -142,6 +164,7 @@ if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
   // Initialize when page loads
   function init() {
     console.log(`[GitHub Bookmarked Issues] init() readyState: ${document.readyState}`);
+    setupIconTemplates();
     if (document.readyState === 'loading') {
       // FIXME: Button is not inserted on navigation to a new issue page, but will be added if that
       // page is *reloaded*.  So, SPA application problem?  Use a different event?
