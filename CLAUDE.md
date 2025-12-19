@@ -176,3 +176,138 @@ The extension uses GitHub's `relative-time-element` web component for human-frie
 - Auto-updates as time passes
 - Fallback: `formatDate()` function provides initial text content
 - Elements upgrade automatically after creation (custom elements spec)
+
+# innerHTML and XSS Prevention
+
+## The Problem
+
+Using `innerHTML` with dynamic content creates XSS vulnerabilities and triggers web-ext linter warnings (`UNSAFE_VAR_ASSIGNMENT`). However, avoiding innerHTML entirely can lead to verbose, hard-to-maintain code with endless `createElement` and `setAttribute` calls.
+
+## The Solution
+
+Use template elements for static structure, textContent for dynamic data:
+
+1. Template elements (`<template>`) hold inert content that won't execute scripts
+2. `template.innerHTML` is safe for static program data and doesn't trigger warnings
+3. `textContent` automatically escapes user input, preventing XSS
+
+## Patterns to Follow
+
+### For Popup/Options Pages (with .html files)
+
+Add templates directly to the HTML:
+
+```html
+<!-- In popup.html -->
+<template id="icon-open">
+  <svg viewBox="0 0 16 16" width="16" height="16">
+    <path d="M8 9.5a1.5 1.5 0 1 0 0-3..."></path>
+  </svg>
+</template>
+
+<template id="issue-item">
+  <div class="issue-item">
+    <div class="state-icon"></div>
+    <div class="issue-title">
+      <a target="_blank" rel="noopener noreferrer"></a>
+    </div>
+    <div class="issue-meta">
+      <span class="repo-name"></span>
+      <span class="issue-number"></span>
+    </div>
+  </div>
+</template>
+```
+
+Use in JavaScript:
+
+```javascript
+// Clone template
+const template = document.getElementById('issue-item');
+const item = template.content.cloneNode(true);
+
+// Populate with data using textContent (auto-escapes)
+item.querySelector('.issue-title a').href = issue.html_url;
+item.querySelector('.issue-title a').textContent = issue.title;
+item.querySelector('.repo-name').textContent = repoName;
+item.querySelector('.issue-number').textContent = `#${issue.number}`;
+
+// Add icon from another template
+const icon = document.getElementById('icon-open').content.cloneNode(true);
+item.querySelector('.state-icon').appendChild(icon);
+
+container.appendChild(item);
+```
+
+### For Content Scripts (no .html file)
+
+Create templates programmatically:
+
+```javascript
+function setupTemplates() {
+  if (document.getElementById('ext-templates')) return;
+
+  const container = document.createElement('div');
+  container.id = 'ext-templates';
+  container.style.display = 'none';
+
+  const iconTemplate = document.createElement('template');
+  iconTemplate.id = 'icon-bookmark';
+  // Using innerHTML here is SAFE - static program data in template element
+  iconTemplate.innerHTML = '<svg viewBox="0 0 16 16"><path d="M3 2.75..."></path></svg>';
+
+  container.appendChild(iconTemplate);
+  document.body.appendChild(container);
+}
+
+// Call once at initialization
+setupTemplates();
+
+// Use throughout the code
+function getIcon(name) {
+  const template = document.getElementById(`icon-${name}`);
+  return template.content.cloneNode(true).firstChild;
+}
+
+button.appendChild(getIcon('bookmark'));
+```
+
+## Patterns to Avoid
+
+### Don't: Use innerHTML for Dynamic Content
+
+```javascript
+// BAD - XSS vulnerability
+element.innerHTML = `<span>${userInput}</span>`;
+
+// BAD - Even with escaping, triggers linter warnings
+element.innerHTML = `<span>${escapeHtml(userInput)}</span>`;
+```
+
+### Don't: Verbose createElement Chains for Static Content
+
+```javascript
+// BAD - 20+ lines for a simple SVG
+const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+svg.setAttribute('aria-hidden', 'true');
+svg.setAttribute('focusable', 'false');
+svg.setAttribute('viewBox', '0 0 16 16');
+svg.setAttribute('width', '16');
+svg.setAttribute('height', '16');
+// ... 15 more setAttribute calls ...
+const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+path.setAttribute('d', 'M3 2.75C3...');
+svg.appendChild(path);
+
+// GOOD - 2 lines using template
+const template = document.createElement('template');
+template.innerHTML = '<svg aria-hidden="true" viewBox="0 0 16 16"><path d="M3 2.75..."></path></svg>';
+```
+
+## Key Principles
+
+1. **Separation of concerns**: Static structure (templates) vs. dynamic data (textContent)
+2. **Template elements are designed for this**: Using `template.innerHTML` for static content is the intended use case
+3. **textContent auto-escapes**: No need for `escapeHtml()` helpers
+4. **Zero warnings**: This approach eliminates all web-ext linter warnings
+5. **Readable code**: Templates keep HTML structure visible and maintainable
