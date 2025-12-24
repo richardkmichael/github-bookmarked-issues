@@ -130,8 +130,8 @@ async function displayIssues(bookmarks) {
     }
 
     // Make whole item clickable
-    const issueElement = item.querySelector('.issue-item');
-    issueElement.addEventListener('click', (e) => {
+    const issueItem = item.querySelector('.issue-item');
+    issueItem.addEventListener('click', (e) => {
       if (e.target.tagName !== 'A') {
         window.open(issue.html_url, '_blank');
       }

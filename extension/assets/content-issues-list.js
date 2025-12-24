@@ -332,13 +332,14 @@ async function fetchIssueDetails(owner, repo, number, type) {
     });
 
     if (!response.ok) {
-      throw new Error(`GitHub API error: ${response.status}`);
+      const statusText = response.statusText || 'Unknown Error';
+      throw new Error(`${response.status} ${statusText}`);
     }
 
     return await response.json();
   } catch (error) {
     console.error('[Bookmarked] Error fetching issue details:', error);
-    return null;
+    return { _error: error.message };
   }
 }
 
@@ -560,23 +561,23 @@ async function loadAndRenderBookmarks() {
   const container = document.querySelector('[data-extension-bookmarks-container]');
   if (!container) return;
 
-  const loadingEl = container.querySelector('#bookmarks-loading');
-  const errorEl = container.querySelector('#bookmarks-error');
-  const emptyEl = container.querySelector('#bookmarks-empty');
-  const listEl = container.querySelector('#bookmarks-list');
+  const loading = container.querySelector('#bookmarks-loading');
+  const error = container.querySelector('#bookmarks-error');
+  const empty = container.querySelector('#bookmarks-empty');
+  const list = container.querySelector('#bookmarks-list');
 
-  loadingEl.style.display = 'block';
-  errorEl.style.display = 'none';
-  emptyEl.style.display = 'none';
-  listEl.replaceChildren();
+  loading.style.display = 'block';
+  error.style.display = 'none';
+  empty.style.display = 'none';
+  list.replaceChildren();
 
   try {
     const bookmarks = await getBookmarks();
     const bookmarkIds = Object.keys(bookmarks);
 
     if (bookmarkIds.length === 0) {
-      loadingEl.style.display = 'none';
-      emptyEl.style.display = 'block';
+      loading.style.display = 'none';
+      empty.style.display = 'block';
       return;
     }
 
@@ -587,12 +588,29 @@ async function loadAndRenderBookmarks() {
     });
 
     const issues = await Promise.all(issuePromises);
-    const validIssues = issues.filter(issue => issue !== null);
+    const validIssues = issues.filter(issue => issue && !issue._error);
+    const failedIssues = issues.filter(issue => issue && issue._error);
+    const failedCount = failedIssues.length;
 
     if (validIssues.length === 0) {
-      loadingEl.style.display = 'none';
-      emptyEl.style.display = 'block';
+      loading.style.display = 'none';
+      if (failedCount > 0) {
+        // All fetches failed - show error
+        error.style.display = 'block';
+        const errors = failedIssues.map(issue => issue._error).join(', ');
+        error.textContent = `Failed to load issue details from GitHub API: ${errors}`;
+      } else {
+        // Genuinely no bookmarks
+        empty.style.display = 'block';
+      }
       return;
+    }
+
+    // Show warning if some (but not all) issues failed to load
+    if (failedCount > 0) {
+      error.style.display = 'block';
+      const errors = failedIssues.map(issue => issue._error).join(', ');
+      error.textContent = `Warning: ${failedCount} of ${issues.length} issues failed to load: ${errors}`;
     }
 
     // Sort by updated date
@@ -609,18 +627,18 @@ async function loadAndRenderBookmarks() {
 
     // Render all issues
     validIssues.forEach(issue => {
-      const liEl = renderIssueItem(issue);
-      listEl.appendChild(liEl);
+      const item = renderIssueItem(issue);
+      list.appendChild(item);
     });
 
-    loadingEl.style.display = 'none';
+    loading.style.display = 'none';
     setupFilterInput();
 
-  } catch (error) {
-    console.error('[Bookmarked] Error loading bookmarks:', error);
-    loadingEl.style.display = 'none';
-    errorEl.style.display = 'block';
-    errorEl.textContent = `Failed to load bookmarked issues: ${error.message}`;
+  } catch (e) {
+    console.error('[Bookmarked] Error loading bookmarks:', e);
+    loading.style.display = 'none';
+    error.style.display = 'block';
+    error.textContent = `Failed to load bookmarked issues: ${e.message}`;
   }
 }
 

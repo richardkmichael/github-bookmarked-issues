@@ -35,6 +35,49 @@ if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
     return template.content.cloneNode(true).firstChild;
   }
 
+  // Show error notification to user
+  function showErrorNotification(message) {
+    // Remove any existing notification
+    const existing = document.querySelector('[data-extension-notification]');
+    if (existing) {
+      existing.remove();
+    }
+
+    // Create notification using GitHub Primer styles
+    const notification = document.createElement('div');
+    notification.setAttribute('data-extension-notification', 'true');
+    notification.style.cssText = `
+      position: fixed;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 999999;
+      max-width: 450px;
+      padding: 16px;
+      background-color: #ffebe9;
+      border: 1px solid #ff8182;
+      border-radius: 6px;
+      color: #82071e;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+      font-size: 14px;
+      box-shadow: 0 8px 24px rgba(140, 149, 159, 0.2);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    `;
+
+    notification.textContent = message;
+
+    document.body.appendChild(notification);
+
+    // Auto-dismiss after 4 seconds
+    setTimeout(() => {
+      notification.style.opacity = '0';
+      notification.style.transition = 'opacity 0.3s ease';
+      setTimeout(() => notification.remove(), 300);
+    }, 4000);
+  }
+
   // Selector for page header actions (using prefix to avoid CSS module hash)
   const HEADER_ACTIONS_SELECTOR = '[data-component="PH_Actions"] [class*="HeaderMenu-module__menuActionsContainer"]';
 
@@ -50,8 +93,8 @@ if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
     }
 
     const [, owner, repo, type, number] = urlMatch;
-    const titleElement = document.querySelector('.js-issue-title, h1.gh-header-title');
-    const title = titleElement ? titleElement.textContent.trim() : '';
+    const issueTitle = document.querySelector('.js-issue-title, h1.gh-header-title');
+    const title = issueTitle ? issueTitle.textContent.trim() : '';
 
     return {
       id: `${owner}/${repo}/${type}/${number}`,
@@ -114,6 +157,7 @@ if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
       }
     } catch (error) {
       console.error('[GitHub Bookmarked Issues] Failed to toggle bookmark:', error);
+      showErrorNotification('Failed to update bookmark. Please try again.');
     }
   }
 
