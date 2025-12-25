@@ -1,5 +1,4 @@
 {
-  "$schema": "https://json.schemastore.org/chrome-manifest",
   "name": "GitHub Bookmarked Issues",
   "version": "1.0.0",
   "description": "Track your bookmarked GitHub issues across all repositories with cross-device sync",
