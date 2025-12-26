@@ -1,45 +1,199 @@
-# Build Instructions for Firefox AMO Reviewers
+# Build Instructions
 
-This extension uses a simple build process with one npm dependency.
+This cross-platform extension supports both Chrome and Firefox.
 
 ## Prerequisites
 
 - Node.js 18+
 - npm
 
-## Build Steps
+## Quick Start
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/YOUR_USERNAME/github-bookmarked-issues.git
-   cd github-bookmarked-issues/development
-   ```
+**Firefox**:
+```bash
+npm install
+npm run build:firefox
+```
 
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
+**Chrome**:
+```bash
+npm install
+npm run build:chrome
+```
 
-3. Build the extension:
-   ```bash
-   npm run build:firefox
-   ```
+**Both browsers**:
+```bash
+npm install
+npm run build
+```
 
-## Output
+## Output Locations
 
-The built Firefox extension will be located at:
-- `build/firefox/github-bookmarked-issues-{version}.xpi`
+- Firefox XPI: `build/firefox/github-bookmarked-issues-{version}.xpi`
+- Chrome ZIP: `build/chrome/github-bookmarked-issues-{version}.zip`
+
+## Build System Architecture
+
+### Why Two Manifest Files?
+
+This extension maintains **separate manifest files** due to incompatible Manifest V3 implementations:
+
+**Chrome** (`extension/manifest-chrome.json`):
+```json
+"background": {
+  "service_worker": "assets/background.js",
+  "type": "module"
+}
+```
+
+**Firefox** (`extension/manifest-firefox.json`):
+```json
+"background": {
+  "scripts": ["assets/background.js"],
+  "type": "module"
+},
+"browser_specific_settings": {
+  "gecko": {
+    "id": "github-bookmarked-issues@extensions",
+    "strict_min_version": "128.0",
+    "data_collection_permissions": {"required": ["none"]}
+  }
+}
+```
+
+**Key Differences**:
+- Chrome uses `service_worker` (string), Firefox uses `scripts` (array)
+- Firefox requires `browser_specific_settings.gecko.id` for extension persistence
+- Firefox-specific `data_collection_permissions` declaration
+- Chrome manifest includes `$schema` for IDE validation (Firefox rejects this field)
+
+### Build Pipeline (3 Stages)
+
+#### 1. `scripts/copy.js` - File Preparation
+- Copies `extension/` → `build/{browser}/`
+- Skips `manifest-*.json` and `vendor/` (handled separately)
+- Copies browser-specific manifest (`manifest-{browser}.json`), renames to `manifest.json`
+
+#### 2. `scripts/build.js` - Dependency Bundling
+- Bundles `@github/relative-time-element` into `assets/vendor/`
+- Required for Manifest V3 Content Security Policy compliance
+
+#### 3. `scripts/package.js` - Distribution Packaging
+- **Chrome**: Creates ZIP using `zip` utility
+- **Firefox**: Creates XPI using `web-ext build` with validation
+
+### Why Not Use web-ext Alone?
+
+While `web-ext` supports cross-platform development:
+- ✓ Can test in Chromium: `web-ext run --target chromium`
+- ✓ Can build packages: `web-ext build`
+- ✓ Validates Firefox extensions: `web-ext lint`
+
+**BUT** it cannot:
+- ✗ Automatically handle manifest differences between browsers
+- ✗ Swap manifests based on target platform
+- ✗ Create Chrome Web Store packages (only Firefox signing via `web-ext sign`)
+
+Our build system uses `web-ext` where appropriate (Firefox packaging/linting) while handling cross-platform manifest differences through custom scripts.
+
+## Development Workflow
+
+### Option 1: Auto-rebuild with File Watcher (Recommended)
+
+Test both browsers simultaneously with automatic rebuilds on file changes:
+
+```bash
+# Terminal 1: Start file watcher
+npm run dev:watch
+
+# Terminal 2: Load Firefox from build/firefox/
+# Terminal 3: Load Chrome from build/chrome/
+```
+
+**How it works**:
+- Watches `extension/` directory for changes
+- Automatically rebuilds both Firefox and Chrome builds
+- Reload extension in browser to see changes
+
+**Loading the extension**:
+- **Firefox**: `about:debugging` → "Load Temporary Add-on" → select `build/firefox/manifest.json`
+- **Chrome**: `chrome://extensions` → "Load unpacked" → select `build/chrome/` directory
+
+**Making changes**:
+1. Edit files in `extension/` directory
+2. Watcher detects change and rebuilds (~2-3 seconds)
+3. Reload extension in browser to see changes
+
+### Option 2: Manual Development (Firefox only)
+
+Firefox can load directly from source without building:
+
+```bash
+# Create symlink to Firefox manifest
+ln -sf manifest-firefox.json extension/manifest.json
+
+# Load in Firefox
+# about:debugging → "Load Temporary Add-on" → select extension/manifest.json
+```
+
+**Note**: Chrome does not follow symlinks, so it always requires building. For Chrome development, use Option 1.
+
+### Making Changes (Manual mode)
+
+1. Edit files in `extension/` directory
+2. **Firefox**: Click "Reload" in `about:debugging` (no rebuild needed)
+3. **Chrome**: Run `npm run build:chrome` and reload extension
+
+### Running Tests
+
+```bash
+npm test              # All tests
+npm run test:chrome   # Chrome-specific
+npm run lint          # Lint Firefox build
+```
 
 ## Dependency Information
 
-The extension uses one external dependency:
+**@github/relative-time-element** (GitHub's official web component)
+- npm: https://www.npmjs.com/package/@github/relative-time-element
+- Source: https://github.com/github/relative-time-element
+- Version: 5.0.0 (pinned in package.json)
+- License: MIT
+- Purpose: Display human-friendly timestamps ("2 weeks ago")
+- Build: Copied from `node_modules/@github/relative-time-element/dist/index.js`
+- Output: `build/{browser}/assets/vendor/relative-time-element.js`
 
-- **@github/relative-time-element** (GitHub's web component)
-  - npm package: https://www.npmjs.com/package/@github/relative-time-element
-  - Source: https://github.com/github/relative-time-element
-  - Version: 5.0.0 (pinned in package.json)
-  - Built file: Copied from `node_modules/@github/relative-time-element/dist/index.js`
-  - License: MIT
-  - Purpose: Display human-friendly relative timestamps ("2 weeks ago")
+Bundled locally to comply with Manifest V3 CSP (no external CDN scripts allowed).
 
-The dependency is installed via npm and the built file is copied during the build process.
+## For Firefox AMO Reviewers
+
+The build is deterministic and reproducible:
+
+```bash
+npm install
+npm run build:firefox
+```
+
+Output: `build/firefox/github-bookmarked-issues-{version}.xpi`
+
+Source code is in `extension/`, build scripts in `scripts/`. Same source + dependencies = same output.
+
+## Troubleshooting
+
+**"File does not contain a valid manifest" in Firefox**:
+- When loading from source, ensure `extension/manifest.json` symlink points to `manifest-firefox.json`
+- Firefox rejects manifests containing `$schema` field
+- When using file watcher, load from `build/firefox/manifest.json`
+
+**Chrome won't load extension**:
+- Chrome does not follow symlinks - always load from `build/chrome/` directory
+- Use `npm run dev:watch` for automatic rebuilds during development
+
+**Watcher not detecting changes**:
+- Ensure `npm run dev:watch` is running
+- Check that you're editing files in `extension/` directory
+- Restart watcher if needed (Ctrl+C, then `npm run dev:watch`)
+
+**Missing vendor directory**:
+- Run `npm run dev:watch` or `npm run build:{browser}`
+- Vendor files are generated during build, not in source
