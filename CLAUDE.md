@@ -113,6 +113,15 @@ When modifying the Bookmarks view styling:
 4. **Missing wrapper divs**: GitHub uses plain wrapper `<div>`s for spacing - don't skip them
 5. **CSS class names**: These are CSS modules with generated hash suffixes - copy exactly
 
+# Code Style
+
+Do not use Hungarian notation for variable names. Use descriptive names without type suffixes.
+
+Good examples:
+- `error`, `loading`, `empty`, `list` (not `errorEl`, `loadingEl`, `emptyEl`, `listEl`)
+- `item`, `issueItem`, `issueTitle` (not `liEl`, `issueElement`, `titleElement`)
+- `button`, `container` (not `buttonEl`, `containerEl`)
+
 # Dependencies and Modules
 
 ## Manifest V3 Content Security Policy
