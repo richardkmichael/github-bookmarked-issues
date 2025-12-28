@@ -678,13 +678,33 @@ function setupFilterInput() {
       const searchText = e.target.value.toLowerCase();
       const items = document.querySelectorAll('[data-extension-bookmarks-container] [data-issue-id]');
 
+      let visibleCount = 0;
       items.forEach(item => {
-        const title = item.querySelector('a').textContent.toLowerCase();
-        const repo = item.querySelector('.DescriptionItem-module__default--rAYpS span')?.textContent.toLowerCase() || '';
+        // Use stable data-testid attributes instead of hashed class names
+        const titleLink = item.querySelector('[data-testid="issue-pr-title-link"]');
+        const repoAndNumber = item.querySelector('[data-testid="list-row-repo-name-and-number"]');
+
+        // First div inside repo-and-number contains the repo name
+        const repoSpan = repoAndNumber?.querySelector('div:first-child span');
+
+        const title = titleLink?.textContent.toLowerCase() || '';
+        const repo = repoSpan?.textContent.toLowerCase() || '';
 
         const matches = title.includes(searchText) || repo.includes(searchText);
-        item.style.display = matches ? '' : 'none';
+
+        // Hide/show the wrapper div (two levels up from li with data-issue-id)
+        const wrapper = item.parentElement?.parentElement;
+        if (wrapper) {
+          wrapper.style.display = matches ? '' : 'none';
+          if (matches) visibleCount++;
+        }
       });
+
+      // Update results count
+      const countHeading = document.querySelector('#bookmarks-count');
+      if (countHeading) {
+        countHeading.textContent = `${visibleCount} result${visibleCount !== 1 ? 's' : ''}`;
+      }
     }, 300);
   });
 }
