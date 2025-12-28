@@ -1,6 +1,9 @@
 ## Development
 
-Loading local development code.
+`npm run build`, then load code from:
+
+- build/chrome/
+- build/firefox/
 
 ### Chrome
 
@@ -24,6 +27,11 @@ URL: `about:debugging`
 ### Chrome
 
 URL: `chrome://extensions`
+
+ - `Inspect views service worker` to open devtools for the extension
+
+Install Chrome Canary to allow the chrome-devtools MCP to autoconnect to Chrome to allow Claude to
+control and debug, see `.mcp.json`.
 
 ### Firefox
 
