@@ -192,6 +192,19 @@ if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
     bookmarkButton.setAttribute('data-variant', 'invisible');
     bookmarkButton.setAttribute(BOOKMARK_BUTTON_ATTR, 'true');
 
+    // Add inline styles to match GitHub's native icon buttons
+    bookmarkButton.style.cssText = `
+      border: none;
+      background: transparent;
+      padding: 0;
+      margin: 0;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: inherit;
+    `;
+
     // Check if already bookmarked and set initial state
     const bookmarked = await isBookmarked(issueData.id);
     updateBookmarkButton(bookmarkButton, bookmarked);
