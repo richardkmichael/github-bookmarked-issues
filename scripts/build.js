@@ -18,8 +18,8 @@ const OUTPUT_DIR = path.join(ROOT, 'build', browser, 'assets', 'vendor');
 async function buildVendor() {
   console.log(`Building vendor dependencies for ${browser}...`);
 
-  // Source from node_modules
-  const source = path.join(ROOT, 'node_modules', '@github', 'relative-time-element', 'dist', 'index.js');
+  // Relative time source from node_modules (use bundle.js, not index.js)
+  const source = path.join(ROOT, 'node_modules', '@github', 'relative-time-element', 'dist', 'bundle.js');
 
   // Check if dependency is installed
   try {
@@ -33,7 +33,7 @@ async function buildVendor() {
   // Create output directory
   await fs.mkdir(OUTPUT_DIR, { recursive: true });
 
-  // Copy built file
+  // Copy the relative time source bundle file to vendor, renaming for clarity.
   const dest = path.join(OUTPUT_DIR, 'relative-time-element.js');
   await fs.copyFile(source, dest);
 
