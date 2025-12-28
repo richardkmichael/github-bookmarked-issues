@@ -366,7 +366,7 @@ async function fetchIssueDetails(owner, repo, number, type) {
 
 // Create a bookmarks view container with GitHub's native structure
 function createBookmarksView() {
-  return getTemplate('bookmarks-view').firstChild;
+  return getTemplate('bookmarks-view').firstElementChild;
 }
 
 // Get bookmarks from storage
