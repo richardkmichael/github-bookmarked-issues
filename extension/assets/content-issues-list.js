@@ -9,6 +9,9 @@ if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
 // Reference to our injected nav item
 let bookmarkNavItem = null;
 
+// Store original page title
+let originalTitle = null;
+
 // Setup templates (injected once into page)
 function setupTemplates() {
   if (document.getElementById('ext-bookmarks-templates')) return;
@@ -702,6 +705,12 @@ function showBookmarksView() {
     history.pushState(null, null, '/issues/bookmarked');
   }
 
+  // Save original title and set to "Bookmarked"
+  if (originalTitle === null) {
+    originalTitle = document.title;
+  }
+  document.title = 'Bookmarked';
+
   // Activate bookmarks nav item
   activateBookmarksNavItem();
 
@@ -730,6 +739,12 @@ function showBookmarksView() {
 
 // Hide the bookmarks view
 function hideBookmarksView() {
+  // Restore original page title
+  if (originalTitle !== null) {
+    document.title = originalTitle;
+    originalTitle = null;
+  }
+
   // Deactivate bookmarks nav item
   deactivateBookmarksNavItem();
 
