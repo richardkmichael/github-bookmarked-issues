@@ -150,14 +150,23 @@ function injectSidebarNavItem() {
     return true;
   }
 
-  // Create bookmark nav item with exact structure from application-main.html
+  // Copy classes from an existing native nav item (to get current CSS module hashes)
+  const nativeNavItem = navList.querySelector('li');
+  const nativeLink = nativeNavItem?.querySelector('a');
+
+  if (!nativeNavItem || !nativeLink) {
+    console.error('[Bookmarked] Failed to find native nav items to copy classes from');
+    return false;
+  }
+
+  // Create bookmark nav item with exact structure from native items
   const li = document.createElement('li');
-  li.className = 'prc-ActionList-ActionListItem-uq6I7 SavedViewItem-module__navItem--_X9cB';
+  li.className = nativeNavItem.className;
   li.setAttribute('data-has-description', 'false');
   li.setAttribute('data-extension-bookmarks-nav', 'true');
 
   const link = document.createElement('a');
-  link.className = 'prc-ActionList-ActionListContent-sg9-x prc-Link-Link-85e08';
+  link.className = nativeLink.className;
   link.setAttribute('tabindex', '0');
   link.setAttribute('data-size', 'medium');
   link.href = '/issues/bookmarked';
@@ -172,27 +181,39 @@ function injectSidebarNavItem() {
     activateBookmarksNavItem();
   });
 
-  // Create inner structure
+  // Create inner structure (copy classes from native link's children)
+  const nativeSpacer = nativeLink.querySelector('[class*="Spacer"]');
+  const nativeSubContent = nativeLink.querySelector('[class*="SubContent"]');
+  const nativeLabel = nativeLink.querySelector('[class*="ItemLabel"]');
+  const nativeItemText = nativeLink.querySelector('[class*="itemText"]');
+  const nativeIcon = nativeLink.querySelector('[class*="icon"]');
+  const nativeTruncatedText = nativeLink.querySelector('[class*="truncatedItemText"]');
+
+  if (!nativeSpacer || !nativeSubContent || !nativeLabel || !nativeItemText || !nativeIcon || !nativeTruncatedText) {
+    console.error('[Bookmarked] Failed to find all required native nav item child elements');
+    return false;
+  }
+
   const spacer = document.createElement('span');
-  spacer.className = 'prc-ActionList-Spacer-dydlX';
+  spacer.className = nativeSpacer.className;
 
   const subContent = document.createElement('span');
-  subContent.className = 'prc-ActionList-ActionListSubContent-lP9xj';
+  subContent.className = nativeSubContent.className;
   subContent.setAttribute('data-component', 'ActionList.Item--DividerContainer');
 
   const label = document.createElement('span');
-  label.className = 'prc-ActionList-ItemLabel-TmBhn';
+  label.className = nativeLabel.className;
 
   const itemText = document.createElement('div');
-  itemText.className = 'SavedViewItem-module__itemText--MKHIQ';
+  itemText.className = nativeItemText.className;
 
   const icon = document.createElement('div');
-  icon.className = 'SavedViewItem-module__icon--XK10s';
+  icon.className = nativeIcon.className;
   icon.setAttribute('data-color', 'gray');
   icon.appendChild(getIcon('bookmark'));
 
   const text = document.createElement('span');
-  text.className = 'SavedViewItem-module__truncatedItemText--Pkqut';
+  text.className = nativeTruncatedText.className;
   text.textContent = 'Bookmarked';
 
   // Assemble structure
