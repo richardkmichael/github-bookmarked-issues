@@ -218,25 +218,72 @@ if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
     console.log('[GitHub Bookmarked Issues] Bookmark button added');
   }
 
+  // Track current URL to detect navigation
+  let currentUrl = location.href;
+  let navigationTimeout = null;
+
+  // Setup observer to handle SPA navigation by watching DOM changes
+  function setupNavigationObserver() {
+    // Watch for DOM changes in the main content area
+    const observer = new MutationObserver(() => {
+      const newUrl = location.href;
+      if (newUrl !== currentUrl) {
+        currentUrl = newUrl;
+        console.log('[GitHub Bookmarked Issues] Navigation detected:', currentUrl);
+
+        // Debounce: clear any pending timeout and set a new one
+        if (navigationTimeout) {
+          clearTimeout(navigationTimeout);
+        }
+
+        // Wait for React to finish rendering
+        navigationTimeout = setTimeout(() => {
+          insertBookmarkButton();
+          navigationTimeout = null;
+        }, 50);
+      }
+    });
+
+    // Observe the main element for changes
+    const main = document.querySelector('main');
+    if (main) {
+      observer.observe(main, {
+        childList: true,
+        subtree: true
+      });
+      console.log('[GitHub Bookmarked Issues] Navigation observer started');
+    } else {
+      console.log('[GitHub Bookmarked Issues] Could not find main element for observer');
+    }
+
+    // Also handle popstate (back/forward buttons)
+    window.addEventListener('popstate', () => {
+      if (navigationTimeout) {
+        clearTimeout(navigationTimeout);
+      }
+      navigationTimeout = setTimeout(() => {
+        insertBookmarkButton();
+        navigationTimeout = null;
+      }, 50);
+    });
+  }
+
   // Initialize when page loads
   function init() {
     console.log(`[GitHub Bookmarked Issues] init() readyState: ${document.readyState}`);
     setupIconTemplates();
+
+    // Initial button insertion
     if (document.readyState === 'loading') {
-      // FIXME: Button is not inserted on navigation to a new issue page, but will be added if that
-      // page is *reloaded*.  So, SPA application problem?  Use a different event?
-      document.addEventListener('DOMContentLoaded', insertBookmarkButton);
+      document.addEventListener('DOMContentLoaded', () => {
+        insertBookmarkButton();
+        setupNavigationObserver();
+      });
     } else {
       insertBookmarkButton();
+      setupNavigationObserver();
     }
   }
-
-  // FIXME: This isn't working and no log output, maybe SPA is not `turbo:render`? Investigate refined-github's method.
-  // Handle Turbo navigation (GitHub's SPA navigation)
-  document.addEventListener('turbo:render', () => {
-    console.log('[GitHub Bookmarked Issues] Turbo navigation detected, re-initializing');
-    insertBookmarkButton();
-  });
 
   // Start
   init();

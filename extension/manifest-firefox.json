@@ -37,6 +37,7 @@
     {
       "run_at": "document_end",
       "matches": [
+        "https://github.com/*/*/issues",
         "https://github.com/*/*/issues/*",
         "https://github.com/*/*/pull/*"
       ],
