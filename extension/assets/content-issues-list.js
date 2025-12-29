@@ -104,6 +104,99 @@ function createBookmarksViewTemplate() {
                           <div role="toolbar" aria-label="Actions" class="VisibleAndOverflowContainer-module__Box_0--KyT2b" style="gap: var(--base-size-4);">
                             <div class="VisibleItems-module__Box_1--LOtDr" style="gap: var(--base-size-4);">
                               <div data-action-bar-item="spinner" class="VisibleItem-module__Box_0--BsJkb"></div>
+                              <div data-action-bar-item="sort-by" class="VisibleItem-module__Box_0--BsJkb" style="position: relative;">
+                                <button type="button" id="bookmarks-sort-button" aria-haspopup="true" aria-expanded="false" class="prc-Button-ButtonBase-9n-Xk" data-loading="false" data-size="medium" data-variant="invisible">
+                                  <span data-component="buttonContent" class="prc-Button-ButtonContent-Iohp5">
+                                    <span data-component="leadingVisual" class="prc-Button-Visual-YNt2F prc-Button-VisualWrap-E4cnq">
+                                      <svg aria-hidden="true" focusable="false" class="octicon octicon-sort-desc" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" style="display: inline-block; overflow: visible; vertical-align: text-bottom;">
+                                        <path d="M0 4.25a.75.75 0 0 1 .75-.75h7.5a.75.75 0 0 1 0 1.5H.75A.75.75 0 0 1 0 4.25Zm0 4a.75.75 0 0 1 .75-.75h4.5a.75.75 0 0 1 0 1.5H.75A.75.75 0 0 1 0 8.25Zm0 4a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5H.75a.75.75 0 0 1-.75-.75ZM13.5 10h2.25a.25.25 0 0 1 .177.427l-3 3a.25.25 0 0 1-.354 0l-3-3A.25.25 0 0 1 9.75 10H12V3.75a.75.75 0 0 1 1.5 0V10Z"></path>
+                                      </svg>
+                                    </span>
+                                    <span data-component="text" class="prc-Button-Label-FWkx3">
+                                      <span class="sr-only">Sort by </span>
+                                      <span id="bookmarks-sort-label">Updated</span>
+                                    </span>
+                                    <span data-component="trailingAction" class="prc-Button-Visual-YNt2F prc-Button-VisualWrap-E4cnq">
+                                      <svg aria-hidden="true" focusable="false" class="octicon octicon-triangle-down" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" style="display: inline-block; overflow: visible; vertical-align: text-bottom;">
+                                        <path d="m4.427 7.427 3.396 3.396a.25.25 0 0 0 .354 0l3.396-3.396A.25.25 0 0 0 11.396 7H4.604a.25.25 0 0 0-.177.427Z"></path>
+                                      </svg>
+                                    </span>
+                                  </span>
+                                </button>
+                                <ul id="bookmarks-sort-menu" class="prc-ActionList-ActionList-rPFF2" role="menu" aria-labelledby="bookmarks-sort-button" data-dividers="false" data-variant="inset" style="display: none; position: absolute; z-index: 100; background: var(--overlay-bgColor); border: 1px solid var(--borderColor-default); border-radius: 12px; box-shadow: var(--shadow-floating-medium); min-width: 240px; margin-top: 4px;">
+                                  <li class="prc-ActionList-Group-lMIPQ" role="none">
+                                    <h3 class="prc-ActionList-GroupHeading-UEqaz" style="padding: 6px 8px; margin: 0; font-size: 12px; font-weight: 600; color: var(--fgColor-muted);">Sort by</h3>
+                                    <ul role="group" class="prc-ActionList-GroupList-V5B3-">
+                                      <li role="menuitemradio" class="prc-ActionList-ActionListItem-So4vC" data-sort-criteria="updated" aria-checked="true">
+                                        <div class="prc-ActionList-ActionListContent-KBb8-" data-size="medium">
+                                          <span class="prc-ActionList-LeadingAction-hbWbh prc-ActionList-VisualWrap-bdCsS">
+                                            <svg aria-hidden="true" focusable="false" class="octicon octicon-check" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" style="display: inline-block; overflow: visible; vertical-align: text-bottom;">
+                                              <path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"></path>
+                                            </svg>
+                                          </span>
+                                          <span class="prc-ActionList-ActionListSubContent-gKsFp">
+                                            <span class="prc-ActionList-ItemLabel-81ohH">Last updated</span>
+                                          </span>
+                                        </div>
+                                      </li>
+                                      <li role="menuitemradio" class="prc-ActionList-ActionListItem-So4vC" data-sort-criteria="bookmarked" aria-checked="false">
+                                        <div class="prc-ActionList-ActionListContent-KBb8-" data-size="medium">
+                                          <span class="prc-ActionList-LeadingAction-hbWbh prc-ActionList-VisualWrap-bdCsS">
+                                            <svg aria-hidden="true" focusable="false" class="octicon octicon-check" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" style="display: inline-block; overflow: visible; vertical-align: text-bottom;">
+                                              <path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"></path>
+                                            </svg>
+                                          </span>
+                                          <span class="prc-ActionList-ActionListSubContent-gKsFp">
+                                            <span class="prc-ActionList-ItemLabel-81ohH">Bookmarked on</span>
+                                          </span>
+                                        </div>
+                                      </li>
+                                      <li role="menuitemradio" class="prc-ActionList-ActionListItem-So4vC" data-sort-criteria="repo" aria-checked="false">
+                                        <div class="prc-ActionList-ActionListContent-KBb8-" data-size="medium">
+                                          <span class="prc-ActionList-LeadingAction-hbWbh prc-ActionList-VisualWrap-bdCsS">
+                                            <svg aria-hidden="true" focusable="false" class="octicon octicon-check" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" style="display: inline-block; overflow: visible; vertical-align: text-bottom;">
+                                              <path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"></path>
+                                            </svg>
+                                          </span>
+                                          <span class="prc-ActionList-ActionListSubContent-gKsFp">
+                                            <span class="prc-ActionList-ItemLabel-81ohH">Repository</span>
+                                          </span>
+                                        </div>
+                                      </li>
+                                    </ul>
+                                  </li>
+                                  <li class="prc-ActionList-Divider-cJAu8" role="separator"></li>
+                                  <li class="prc-ActionList-Group-lMIPQ" role="none">
+                                    <h3 class="prc-ActionList-GroupHeading-UEqaz" style="padding: 6px 8px; margin: 0; font-size: 12px; font-weight: 600; color: var(--fgColor-muted);">Order</h3>
+                                    <ul role="group" class="prc-ActionList-GroupList-V5B3-">
+                                      <li role="menuitemradio" class="prc-ActionList-ActionListItem-So4vC" data-sort-order="asc" aria-checked="false">
+                                        <div class="prc-ActionList-ActionListContent-KBb8-" data-size="medium">
+                                          <span class="prc-ActionList-LeadingAction-hbWbh prc-ActionList-VisualWrap-bdCsS">
+                                            <svg aria-hidden="true" focusable="false" class="octicon octicon-sort-asc" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" style="display: inline-block; overflow: visible; vertical-align: text-bottom;">
+                                              <path d="m12.927 2.573 3 3A.25.25 0 0 1 15.75 6H13.5v6.75a.75.75 0 0 1-1.5 0V6H9.75a.25.25 0 0 1-.177-.427l3-3a.25.25 0 0 1 .354 0ZM0 12.25a.75.75 0 0 1 .75-.75h7.5a.75.75 0 0 1 0 1.5H.75a.75.75 0 0 1-.75-.75Zm0-4a.75.75 0 0 1 .75-.75h4.5a.75.75 0 0 1 0 1.5H.75A.75.75 0 0 1 0 8.25Zm0-4a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5H.75A.75.75 0 0 1 0 4.25Z"></path>
+                                            </svg>
+                                          </span>
+                                          <span class="prc-ActionList-ActionListSubContent-gKsFp">
+                                            <span class="prc-ActionList-ItemLabel-81ohH" id="order-asc-label">Oldest</span>
+                                          </span>
+                                        </div>
+                                      </li>
+                                      <li role="menuitemradio" class="prc-ActionList-ActionListItem-So4vC" data-sort-order="desc" aria-checked="true">
+                                        <div class="prc-ActionList-ActionListContent-KBb8-" data-size="medium">
+                                          <span class="prc-ActionList-LeadingAction-hbWbh prc-ActionList-VisualWrap-bdCsS">
+                                            <svg aria-hidden="true" focusable="false" class="octicon octicon-sort-desc" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" style="display: inline-block; overflow: visible; vertical-align: text-bottom;">
+                                              <path d="M0 4.25a.75.75 0 0 1 .75-.75h7.5a.75.75 0 0 1 0 1.5H.75A.75.75 0 0 1 0 4.25Zm0 4a.75.75 0 0 1 .75-.75h4.5a.75.75 0 0 1 0 1.5H.75A.75.75 0 0 1 0 8.25Zm0 4a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5H.75a.75.75 0 0 1-.75-.75ZM13.5 10h2.25a.25.25 0 0 1 .177.427l-3 3a.25.25 0 0 1-.354 0l-3-3A.25.25 0 0 1 9.75 10H12V3.75a.75.75 0 0 1 1.5 0V10Z"></path>
+                                            </svg>
+                                          </span>
+                                          <span class="prc-ActionList-ActionListSubContent-gKsFp">
+                                            <span class="prc-ActionList-ItemLabel-81ohH" id="order-desc-label">Newest</span>
+                                          </span>
+                                        </div>
+                                      </li>
+                                    </ul>
+                                  </li>
+                                </ul>
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -580,6 +673,68 @@ function renderIssueItem(issue) {
   return wrapper;
 }
 
+// Sort issues based on selected order
+function sortIssues(issues, bookmarks, sortOrder) {
+  const sorted = [...issues];
+
+  switch (sortOrder) {
+    case 'updated-desc':
+      sorted.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+      break;
+
+    case 'updated-asc':
+      sorted.sort((a, b) => new Date(a.updated_at) - new Date(b.updated_at));
+      break;
+
+    case 'bookmarked-desc':
+      sorted.sort((a, b) => {
+        const bookmarkIdA = getBookmarkIdFromUrl(a.html_url);
+        const bookmarkIdB = getBookmarkIdFromUrl(b.html_url);
+        const bookmarkA = bookmarkIdA ? bookmarks[bookmarkIdA] : null;
+        const bookmarkB = bookmarkIdB ? bookmarks[bookmarkIdB] : null;
+        const timeA = bookmarkA?.bookmarkedAt || 0;
+        const timeB = bookmarkB?.bookmarkedAt || 0;
+        return timeB - timeA;
+      });
+      break;
+
+    case 'bookmarked-asc':
+      sorted.sort((a, b) => {
+        const bookmarkIdA = getBookmarkIdFromUrl(a.html_url);
+        const bookmarkIdB = getBookmarkIdFromUrl(b.html_url);
+        const bookmarkA = bookmarkIdA ? bookmarks[bookmarkIdA] : null;
+        const bookmarkB = bookmarkIdB ? bookmarks[bookmarkIdB] : null;
+        const timeA = bookmarkA?.bookmarkedAt || 0;
+        const timeB = bookmarkB?.bookmarkedAt || 0;
+        return timeA - timeB;
+      });
+      break;
+
+    case 'repo-asc':
+      sorted.sort((a, b) => {
+        const repoA = getRepoFromUrl(a.html_url).toLowerCase();
+        const repoB = getRepoFromUrl(b.html_url).toLowerCase();
+        const repoCompare = repoA.localeCompare(repoB);
+        return repoCompare !== 0 ? repoCompare : a.number - b.number;
+      });
+      break;
+
+    case 'repo-desc':
+      sorted.sort((a, b) => {
+        const repoA = getRepoFromUrl(a.html_url).toLowerCase();
+        const repoB = getRepoFromUrl(b.html_url).toLowerCase();
+        const repoCompare = repoB.localeCompare(repoA);
+        return repoCompare !== 0 ? repoCompare : b.number - a.number;
+      });
+      break;
+
+    default:
+      sorted.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+  }
+
+  return sorted;
+}
+
 // Load and render all bookmarked issues
 async function loadAndRenderBookmarks() {
   const container = document.querySelector('[data-extension-bookmarks-container]');
@@ -604,6 +759,10 @@ async function loadAndRenderBookmarks() {
       empty.style.display = 'block';
       return;
     }
+
+    // Load sort preference
+    const sortResult = await browser.storage.sync.get(['bookmarks_sort_order']);
+    const sortOrder = sortResult.bookmarks_sort_order || 'updated-desc';
 
     // Fetch all issue details in parallel
     const issuePromises = bookmarkIds.map(id => {
@@ -637,26 +796,27 @@ async function loadAndRenderBookmarks() {
       error.textContent = `Warning: ${failedCount} of ${issues.length} issues failed to load: ${errors}`;
     }
 
-    // Sort by updated date
-    validIssues.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+    // Sort issues based on preference
+    const sortedIssues = sortIssues(validIssues, bookmarks, sortOrder);
 
     // Update result count and show results section
     const resultsSection = container.querySelector('#bookmarks-results-section');
     const countHeading = container.querySelector('#bookmarks-count');
     if (resultsSection && countHeading) {
-      const count = validIssues.length;
+      const count = sortedIssues.length;
       countHeading.textContent = `${count} result${count !== 1 ? 's' : ''}`;
       resultsSection.style.display = 'flex';
     }
 
     // Render all issues
-    validIssues.forEach(issue => {
+    sortedIssues.forEach(issue => {
       const item = renderIssueItem(issue);
       list.appendChild(item);
     });
 
     loading.style.display = 'none';
     setupFilterInput();
+    setupSortDropdown();
 
   } catch (e) {
     console.error('[Bookmarked] Error loading bookmarks:', e);
@@ -707,6 +867,221 @@ function setupFilterInput() {
       }
     }, 300);
   });
+}
+
+// Setup sort dropdown with persistence
+async function setupSortDropdown() {
+  const sortButton = document.querySelector('#bookmarks-sort-button');
+  const sortMenu = document.querySelector('#bookmarks-sort-menu');
+  const sortLabel = document.querySelector('#bookmarks-sort-label');
+
+  if (!sortButton || !sortMenu) {
+    console.error('[Bookmarked] Sort button or menu not found');
+    return;
+  }
+
+  // Check if already initialized (prevent duplicate event listeners)
+  if (sortButton.hasAttribute('data-sort-initialized')) {
+    console.log('[Bookmarked] Sort dropdown already initialized, skipping setup');
+    return;
+  }
+
+  // Mark as initialized
+  sortButton.setAttribute('data-sort-initialized', 'true');
+
+  // Get menu items by section
+  const criteriaItems = sortMenu.querySelectorAll('[data-sort-criteria]');
+  const orderItems = sortMenu.querySelectorAll('[data-sort-order]');
+
+  // Load saved sort preference
+  const result = await browser.storage.sync.get(['bookmarks_sort_order']);
+  const savedSort = result.bookmarks_sort_order || 'updated-desc';
+
+  // Parse saved sort into criteria and order
+  let currentCriteria = 'updated';
+  let currentOrder = 'desc';
+
+  if (savedSort.endsWith('-desc') || savedSort.endsWith('-asc')) {
+    const parts = savedSort.split('-');
+    currentOrder = parts.pop();
+    currentCriteria = parts.join('-');
+  }
+
+  // Helper functions
+  function openMenu() {
+    sortButton.setAttribute('aria-expanded', 'true');
+    sortMenu.style.display = 'block';
+
+    // Position menu below button and ensure it stays within viewport
+    const buttonRect = sortButton.getBoundingClientRect();
+    const menuRect = sortMenu.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+
+    // Position menu below the button
+    const gap = 4; // 4px gap between button and menu
+    sortMenu.style.top = `${buttonRect.height + gap}px`;
+
+    // Check if menu would overflow right edge of viewport
+    const menuRightEdge = buttonRect.right + menuRect.width;
+    if (menuRightEdge > viewportWidth) {
+      // Menu overflows, so align menu's right edge with button's right edge
+      sortMenu.style.right = '0';
+      sortMenu.style.left = 'auto';
+    } else {
+      // No overflow, use default left alignment
+      sortMenu.style.left = '0';
+      sortMenu.style.right = 'auto';
+    }
+  }
+
+  function closeMenu() {
+    sortButton.setAttribute('aria-expanded', 'false');
+    sortMenu.style.display = 'none';
+  }
+
+  function updateSortUI() {
+    // Define label logic based on criteria and order
+    let buttonLabel;
+
+    switch (currentCriteria) {
+      case 'updated':
+        // Always show "Updated" regardless of order
+        buttonLabel = 'Updated';
+        break;
+
+      case 'bookmarked':
+        // Show order in label: "Newest" or "Oldest"
+        buttonLabel = currentOrder === 'desc' ? 'Newest' : 'Oldest';
+        break;
+
+      case 'repo':
+        // Always show "Repo" (shortened) regardless of order
+        buttonLabel = 'Repo';
+        break;
+
+      default:
+        buttonLabel = 'Updated';
+    }
+
+    sortLabel.textContent = buttonLabel;
+
+    // Update button icon based on order
+    const buttonIcon = sortButton.querySelector('.octicon-sort-desc, .octicon-sort-asc');
+    if (buttonIcon) {
+      if (currentOrder === 'desc') {
+        buttonIcon.classList.remove('octicon-sort-asc');
+        buttonIcon.classList.add('octicon-sort-desc');
+        buttonIcon.innerHTML = '<path d="M0 4.25a.75.75 0 0 1 .75-.75h7.5a.75.75 0 0 1 0 1.5H.75A.75.75 0 0 1 0 4.25Zm0 4a.75.75 0 0 1 .75-.75h4.5a.75.75 0 0 1 0 1.5H.75A.75.75 0 0 1 0 8.25Zm0 4a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5H.75a.75.75 0 0 1-.75-.75ZM13.5 10h2.25a.25.25 0 0 1 .177.427l-3 3a.25.25 0 0 1-.354 0l-3-3A.25.25 0 0 1 9.75 10H12V3.75a.75.75 0 0 1 1.5 0V10Z"></path>';
+      } else {
+        buttonIcon.classList.remove('octicon-sort-desc');
+        buttonIcon.classList.add('octicon-sort-asc');
+        buttonIcon.innerHTML = '<path d="m12.927 2.573 3 3A.25.25 0 0 1 15.75 6H13.5v6.75a.75.75 0 0 1-1.5 0V6H9.75a.25.25 0 0 1-.177-.427l3-3a.25.25 0 0 1 .354 0ZM0 12.25a.75.75 0 0 1 .75-.75h7.5a.75.75 0 0 1 0 1.5H.75a.75.75 0 0 1-.75-.75Zm0-4a.75.75 0 0 1 .75-.75h4.5a.75.75 0 0 1 0 1.5H.75A.75.75 0 0 1 0 8.25Zm0-4a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5H.75A.75.75 0 0 1 0 4.25Z"></path>';
+      }
+    }
+
+    // Update aria-checked and visibility on criteria items
+    criteriaItems.forEach(item => {
+      const criteria = item.getAttribute('data-sort-criteria');
+      const isChecked = criteria === currentCriteria;
+      item.setAttribute('aria-checked', isChecked ? 'true' : 'false');
+
+      // Hide/show checkmark icon
+      const checkmark = item.querySelector('.octicon-check');
+      if (checkmark) {
+        checkmark.style.visibility = isChecked ? 'visible' : 'hidden';
+      }
+    });
+
+    // Update order items checkmarks and LABELS
+    const orderAscLabel = document.querySelector('#order-asc-label');
+    const orderDescLabel = document.querySelector('#order-desc-label');
+
+    // Set order labels based on criteria
+    if (currentCriteria === 'repo') {
+      // Repository uses "Ascending" / "Descending"
+      if (orderAscLabel) orderAscLabel.textContent = 'Ascending';
+      if (orderDescLabel) orderDescLabel.textContent = 'Descending';
+    } else {
+      // Updated and Bookmarked use "Oldest" / "Newest"
+      if (orderAscLabel) orderAscLabel.textContent = 'Oldest';
+      if (orderDescLabel) orderDescLabel.textContent = 'Newest';
+    }
+
+    // Update aria-checked and visibility on order items
+    orderItems.forEach(item => {
+      const order = item.getAttribute('data-sort-order');
+      const isChecked = order === currentOrder;
+      item.setAttribute('aria-checked', isChecked ? 'true' : 'false');
+
+      // Hide/show checkmark icon (order items show their own sort icons, not checkmarks)
+      const sortIcon = item.querySelector('.octicon-sort-asc, .octicon-sort-desc');
+      if (sortIcon) {
+        sortIcon.style.visibility = isChecked ? 'visible' : 'hidden';
+      }
+    });
+  }
+
+  async function saveAndReload() {
+    const sortOrder = `${currentCriteria}-${currentOrder}`;
+    await browser.storage.sync.set({ bookmarks_sort_order: sortOrder });
+    closeMenu();
+    await loadAndRenderBookmarks();
+  }
+
+  // Update UI to reflect saved sort
+  updateSortUI();
+
+  // Toggle menu on button click
+  sortButton.addEventListener('click', (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    const isExpanded = sortButton.getAttribute('aria-expanded') === 'true';
+
+    if (isExpanded) {
+      closeMenu();
+    } else {
+      openMenu();
+    }
+  });
+
+  // Handle criteria item clicks
+  criteriaItems.forEach(item => {
+    item.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      const newCriteria = item.getAttribute('data-sort-criteria');
+
+      if (newCriteria !== currentCriteria) {
+        currentCriteria = newCriteria;
+        updateSortUI();
+        await saveAndReload();
+      }
+    });
+  });
+
+  // Handle order item clicks
+  orderItems.forEach(item => {
+    item.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      const newOrder = item.getAttribute('data-sort-order');
+
+      if (newOrder !== currentOrder) {
+        currentOrder = newOrder;
+        updateSortUI();
+        await saveAndReload();
+      }
+    });
+  });
+
+  // Close menu on outside click
+  const closeOnOutsideClick = (e) => {
+    if (!sortButton.contains(e.target) && !sortMenu.contains(e.target)) {
+      closeMenu();
+    }
+  };
+  document.addEventListener('click', closeOnOutsideClick);
+
 }
 
 // Find the main content area (the right-side issues list, not the whole page)
