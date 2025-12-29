@@ -109,6 +109,37 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
       });
     return true;
   }
+
+  if (message.type === 'FETCH_ISSUE_DETAILS') {
+    const { owner, repo, type, number } = message.data;
+    const endpoint = type === 'pull'
+      ? `https://api.github.com/repos/${owner}/${repo}/pulls/${number}`
+      : `https://api.github.com/repos/${owner}/${repo}/issues/${number}`;
+
+    console.log('[Background] Fetching issue:', endpoint);
+
+    fetch(endpoint, {
+      headers: {
+        'Accept': 'application/vnd.github.v3+json'
+      }
+    })
+      .then(async response => {
+        if (!response.ok) {
+          const statusText = response.statusText || 'Unknown Error';
+          throw new Error(`${response.status} ${statusText}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        console.log('[Background] Successfully fetched issue:', `${owner}/${repo}#${number}`);
+        sendResponse({ success: true, data });
+      })
+      .catch(error => {
+        console.error('[Background] Error fetching issue:', endpoint, error);
+        sendResponse({ success: false, error: error.message });
+      });
+    return true;
+  }
 });
 
 // Log when service worker starts

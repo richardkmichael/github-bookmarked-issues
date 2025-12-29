@@ -437,23 +437,17 @@ function formatDate(dateString) {
 }
 
 async function fetchIssueDetails(owner, repo, number, type) {
-  const endpoint = type === 'pull'
-    ? `https://api.github.com/repos/${owner}/${repo}/pulls/${number}`
-    : `https://api.github.com/repos/${owner}/${repo}/issues/${number}`;
-
   try {
-    const response = await fetch(endpoint, {
-      headers: {
-        'Accept': 'application/vnd.github.v3+json'
-      }
+    const response = await browser.runtime.sendMessage({
+      type: 'FETCH_ISSUE_DETAILS',
+      data: { owner, repo, number, type }
     });
 
-    if (!response.ok) {
-      const statusText = response.statusText || 'Unknown Error';
-      throw new Error(`${response.status} ${statusText}`);
+    if (!response.success) {
+      throw new Error(response.error);
     }
 
-    return await response.json();
+    return response.data;
   } catch (error) {
     console.error('[Bookmarked] Error fetching issue details:', error);
     return { _error: error.message };
@@ -671,6 +665,18 @@ function renderIssueItem(issue) {
   wrapper.appendChild(row);
 
   return wrapper;
+}
+
+// Extract repository name from GitHub URL
+function getRepoFromUrl(url) {
+  const match = url.match(/github\.com\/([^/]+)\/([^/]+)\/(issues|pull)/);
+  return match ? `${match[1]}/${match[2]}` : 'unknown/repository';
+}
+
+// Extract full bookmark ID from GitHub URL (owner/repo/type/number)
+function getBookmarkIdFromUrl(url) {
+  const match = url.match(/github\.com\/([^/]+)\/([^/]+)\/(issues|pull)\/(\d+)/);
+  return match ? `${match[1]}/${match[2]}/${match[3]}/${match[4]}` : null;
 }
 
 // Sort issues based on selected order
