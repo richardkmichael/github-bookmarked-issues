@@ -93,17 +93,21 @@ These GitHub CSS module classes must be used exactly as shown:
 
 # Development Workflow
 
-When modifying the Bookmarks view styling:
+1. Edit source code in `extension/assets/`
+2. Run `npm run build:chrome` (or `build:firefox`)
+3. Reload extension in browser
+4. Test changes
+
+## Testing the Bookmarks View
+
+To compare our custom view against GitHub's native views:
 
 1. Navigate to `github.com/issues/created` (or any native view)
 2. Open DevTools and inspect the native GitHub element
-3. Document the exact DOM structure and CSS classes
-4. Click "Bookmarks" to load the custom view
-5. Compare structures and identify differences
-6. Update extension code to match native structure EXACTLY
-7. Reload extension and test
+3. Click "Bookmarks" to load the custom view
+4. Compare DOM structure and styling
 
-**Never guess** - always inspect the native GitHub views first.
+**Never guess** - always inspect native GitHub views first.
 
 # Common Pitfalls
 
@@ -134,18 +138,15 @@ The extension uses Manifest V3, which has strict Content Security Policy (CSP) r
 
 ## Bundled Dependencies Pattern
 
-External libraries must be bundled locally in `extension/assets/vendor/`:
+External libraries are managed via npm and bundled during build:
 
-**Example: relative-time-element**
-```bash
-# One-time build process
-cd tmp/relative-time-element
-npm install
-npm run build
-cp dist/bundle.js extension/assets/vendor/relative-time-element.js
-```
+1. Add dependency: `npm install @github/relative-time-element`
+2. Build copies from `node_modules/` to `build/<browser>/assets/vendor/`
 
-**Loading as ES Module:**
+The build script (`scripts/build.js`) handles copying vendor dependencies from
+`node_modules/` to the build output directory.
+
+**Loading in extension code:**
 ```javascript
 // In popup.js (as a module)
 import './vendor/relative-time-element.js';
