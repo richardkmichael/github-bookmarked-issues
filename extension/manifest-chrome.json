@@ -41,6 +41,7 @@
         "https://github.com/*/*/pull/*"
       ],
       "js": [
+        "assets/shared.js",
         "assets/content.js"
       ]
     },
@@ -51,6 +52,7 @@
         "https://github.com/issues/*"
       ],
       "js": [
+        "assets/shared.js",
         "assets/content-issues-list.js"
       ]
     }

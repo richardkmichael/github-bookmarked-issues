@@ -32,12 +32,6 @@ async function fetchIssueDetails(owner, repo, number, type) {
   }
 }
 
-// Get icon from template
-function getIcon(name) {
-  const template = document.getElementById(`icon-${name}`);
-  return template.content.firstElementChild.cloneNode(true);
-}
-
 // Display storage information
 async function displayStorageInfo() {
   try {

@@ -29,12 +29,6 @@ if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
     document.body.appendChild(container);
   }
 
-  // Get icon from template
-  function getIcon(name) {
-    const template = document.getElementById(`icon-${name}`);
-    return template.content.cloneNode(true).firstChild;
-  }
-
   // Show error notification to user
   function showErrorNotification(message) {
     // Remove any existing notification
@@ -97,7 +91,7 @@ if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
     const title = issueTitle ? issueTitle.textContent.trim() : '';
 
     return {
-      id: `${owner}/${repo}/${type}/${number}`,
+      id: makeBookmarkId(owner, repo, type, number),
       owner,
       repo,
       type,

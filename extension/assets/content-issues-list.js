@@ -356,12 +356,6 @@ function getTemplate(name) {
   return template.content.cloneNode(true);
 }
 
-// Get icon helper
-function getIcon(name) {
-  const template = document.getElementById(`icon-${name}`);
-  return template.content.cloneNode(true).firstChild;
-}
-
 // Inject the "Bookmarked" navigation item into the sidebar
 function injectSidebarNavItem() {
   const navList = document.querySelector('nav[aria-label="Default views"] ul');
@@ -800,12 +794,6 @@ function renderIssueItem(issue) {
 function getRepoFromUrl(url) {
   const match = url.match(/github\.com\/([^/]+)\/([^/]+)\/(issues|pull)/);
   return match ? `${match[1]}/${match[2]}` : 'unknown/repository';
-}
-
-// Extract full bookmark ID from GitHub URL (owner/repo/type/number)
-function getBookmarkIdFromUrl(url) {
-  const match = url.match(/github\.com\/([^/]+)\/([^/]+)\/(issues|pull)\/(\d+)/);
-  return match ? `${match[1]}/${match[2]}/${match[3]}/${match[4]}` : null;
 }
 
 // Sort issues based on selected order
