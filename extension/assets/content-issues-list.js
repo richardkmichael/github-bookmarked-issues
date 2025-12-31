@@ -252,9 +252,9 @@ function createBookmarksViewTemplate() {
                                     </span>
                                   </span>
                                 </button>
-                                <ul id="bookmarks-sort-menu" class="prc-ActionList-ActionList-rPFF2" role="menu" aria-labelledby="bookmarks-sort-button" data-dividers="false" data-variant="inset" style="display: none; position: absolute; z-index: 100; background: var(--overlay-bgColor); border: 1px solid var(--borderColor-default); border-radius: 12px; box-shadow: var(--shadow-floating-medium); min-width: 240px; margin-top: 4px;">
+                                <ul id="bookmarks-sort-menu" class="prc-ActionList-ActionList-rPFF2" role="menu" aria-labelledby="bookmarks-sort-button" data-dividers="false" data-variant="inset" style="display: none; position: absolute; z-index: 100; background: var(--overlay-bgColor); border-radius: 12px; box-shadow: rgba(209, 217, 224, 0.5) 0px 0px 0px 1px, rgba(37, 41, 46, 0.04) 0px 6px 12px -3px, rgba(37, 41, 46, 0.12) 0px 6px 18px 0px; min-width: 192px; margin-top: 4px;">
                                   <li class="prc-ActionList-Group-lMIPQ" role="none">
-                                    <h3 class="prc-ActionList-GroupHeading-UEqaz" style="padding: 6px 8px; margin: 0; font-size: 12px; font-weight: 600; color: var(--fgColor-muted);">Sort by</h3>
+                                    <div role="presentation" aria-hidden="true" data-variant="subtle" data-component="GroupHeadingWrap" class="prc-ActionList-GroupHeadingWrap-laXcX" style="padding: 6px 16px; margin: 0;"><span class="prc-ActionList-GroupHeading-STzxi" style="font-size: 12px; font-weight: 600; color: var(--fgColor-muted);">Sort by</span></div>
                                     <ul role="group" class="prc-ActionList-GroupList-V5B3-">
                                       <li role="menuitemradio" class="prc-ActionList-ActionListItem-So4vC" data-sort-criteria="updated" aria-checked="true">
                                         <div class="prc-ActionList-ActionListContent-KBb8-" data-size="medium">
@@ -294,13 +294,19 @@ function createBookmarksViewTemplate() {
                                       </li>
                                     </ul>
                                   </li>
-                                  <li class="prc-ActionList-Divider-cJAu8" role="separator"></li>
+                                  <li class="prc-ActionList-Divider-taVfb" aria-hidden="true" data-component="ActionList.Divider"></li>
                                   <li class="prc-ActionList-Group-lMIPQ" role="none">
-                                    <h3 class="prc-ActionList-GroupHeading-UEqaz" style="padding: 6px 8px; margin: 0; font-size: 12px; font-weight: 600; color: var(--fgColor-muted);">Order</h3>
+                                    <div role="presentation" aria-hidden="true" data-variant="subtle" data-component="GroupHeadingWrap" class="prc-ActionList-GroupHeadingWrap-laXcX" style="padding: 6px 16px; margin: 0;"><span class="prc-ActionList-GroupHeading-STzxi" style="font-size: 12px; font-weight: 600; color: var(--fgColor-muted);">Order</span></div>
                                     <ul role="group" class="prc-ActionList-GroupList-V5B3-">
                                       <li role="menuitemradio" class="prc-ActionList-ActionListItem-So4vC" data-sort-order="asc" aria-checked="false">
                                         <div class="prc-ActionList-ActionListContent-KBb8-" data-size="medium">
+                                          <span class="prc-ActionList-Spacer-4tR2m"></span>
                                           <span class="prc-ActionList-LeadingAction-hbWbh prc-ActionList-VisualWrap-bdCsS">
+                                            <svg aria-hidden="true" focusable="false" class="octicon octicon-check prc-ActionList-SingleSelectCheckmark-zMd8d" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" style="display: inline-block; overflow: visible; vertical-align: text-bottom;">
+                                              <path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"></path>
+                                            </svg>
+                                          </span>
+                                          <span class="prc-ActionList-LeadingVisual-NBr28 prc-ActionList-VisualWrap-bdCsS">
                                             <svg aria-hidden="true" focusable="false" class="octicon octicon-sort-asc" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" style="display: inline-block; overflow: visible; vertical-align: text-bottom;">
                                               <path d="m12.927 2.573 3 3A.25.25 0 0 1 15.75 6H13.5v6.75a.75.75 0 0 1-1.5 0V6H9.75a.25.25 0 0 1-.177-.427l3-3a.25.25 0 0 1 .354 0ZM0 12.25a.75.75 0 0 1 .75-.75h7.5a.75.75 0 0 1 0 1.5H.75a.75.75 0 0 1-.75-.75Zm0-4a.75.75 0 0 1 .75-.75h4.5a.75.75 0 0 1 0 1.5H.75A.75.75 0 0 1 0 8.25Zm0-4a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5H.75A.75.75 0 0 1 0 4.25Z"></path>
                                             </svg>
@@ -312,7 +318,13 @@ function createBookmarksViewTemplate() {
                                       </li>
                                       <li role="menuitemradio" class="prc-ActionList-ActionListItem-So4vC" data-sort-order="desc" aria-checked="true">
                                         <div class="prc-ActionList-ActionListContent-KBb8-" data-size="medium">
+                                          <span class="prc-ActionList-Spacer-4tR2m"></span>
                                           <span class="prc-ActionList-LeadingAction-hbWbh prc-ActionList-VisualWrap-bdCsS">
+                                            <svg aria-hidden="true" focusable="false" class="octicon octicon-check prc-ActionList-SingleSelectCheckmark-zMd8d" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" style="display: inline-block; overflow: visible; vertical-align: text-bottom;">
+                                              <path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"></path>
+                                            </svg>
+                                          </span>
+                                          <span class="prc-ActionList-LeadingVisual-NBr28 prc-ActionList-VisualWrap-bdCsS">
                                             <svg aria-hidden="true" focusable="false" class="octicon octicon-sort-desc" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" style="display: inline-block; overflow: visible; vertical-align: text-bottom;">
                                               <path d="M0 4.25a.75.75 0 0 1 .75-.75h7.5a.75.75 0 0 1 0 1.5H.75A.75.75 0 0 1 0 4.25Zm0 4a.75.75 0 0 1 .75-.75h4.5a.75.75 0 0 1 0 1.5H.75A.75.75 0 0 1 0 8.25Zm0 4a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5H.75a.75.75 0 0 1-.75-.75ZM13.5 10h2.25a.25.25 0 0 1 .177.427l-3 3a.25.25 0 0 1-.354 0l-3-3A.25.25 0 0 1 9.75 10H12V3.75a.75.75 0 0 1 1.5 0V10Z"></path>
                                             </svg>
@@ -1161,10 +1173,10 @@ async function setupSortDropdown() {
       const isChecked = order === currentOrder;
       item.setAttribute('aria-checked', isChecked ? 'true' : 'false');
 
-      // Hide/show checkmark icon (order items show their own sort icons, not checkmarks)
-      const sortIcon = item.querySelector('.octicon-sort-asc, .octicon-sort-desc');
-      if (sortIcon) {
-        sortIcon.style.visibility = isChecked ? 'visible' : 'hidden';
+      // Show/hide checkmark icon (sort icons always visible)
+      const checkmark = item.querySelector('.octicon-check');
+      if (checkmark) {
+        checkmark.style.visibility = isChecked ? 'visible' : 'hidden';
       }
     });
   }
