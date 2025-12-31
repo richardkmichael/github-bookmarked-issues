@@ -154,9 +154,15 @@ function setupTemplates() {
   container.appendChild(createOpenIconTemplate());
   container.appendChild(createClosedIconTemplate());
   container.appendChild(createCommentIconTemplate());
+  container.appendChild(createSkeletonItemTemplate());
   container.appendChild(createBookmarksViewTemplate());
 
   document.body.appendChild(container);
+
+  // Inject skeleton CSS styles
+  if (!document.getElementById('ext-bookmarks-skeleton-styles')) {
+    document.head.appendChild(createSkeletonStyles());
+  }
 }
 
 // Helper to create bookmark icon template
@@ -189,6 +195,90 @@ function createCommentIconTemplate() {
   template.id = 'icon-comment';
   template.innerHTML = '<svg aria-hidden="true" focusable="false" class="octicon octicon-comment" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" style="vertical-align: text-bottom;"><path d="M1 2.75C1 1.784 1.784 1 2.75 1h10.5c.966 0 1.75.784 1.75 1.75v7.5A1.75 1.75 0 0 1 13.25 12H9.06l-2.573 2.573A1.458 1.458 0 0 1 4 13.543V12H2.75A1.75 1.75 0 0 1 1 10.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h2a.75.75 0 0 1 .75.75v2.19l2.72-2.72a.749.749 0 0 1 .53-.22h4.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg>';
   return template;
+}
+
+// Helper to create skeleton item template
+function createSkeletonItemTemplate() {
+  const template = document.createElement('template');
+  template.id = 'skeleton-item';
+  template.innerHTML = `
+    <div class="ListItems-module__listItem--KRcR0">
+      <div class="IssueRow-module__row--pHXv5">
+        <div class="ListItem-module__listItem--k4eMk skeleton-item">
+          <div class="Title-module__container--XD9YG" data-listview-item-title-container="true">
+            <div class="skeleton-text skeleton-title"></div>
+          </div>
+          <div class="LeadingContent-module__container--cui6v IssueItem-module__leadingContent--s16iU">
+            <div class="LeadingVisual-module__outer--qS9Ac" style="margin-top: 14px;">
+              <div>
+                <div class="LeadingVisual-module__inner--GeEeG" style="width: 16px; height: 16px;">
+                  <div class="skeleton-box skeleton-icon"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="MainContent-module__container--NyRpm">
+            <div class="MainContent-module__inner--qD0Pb">
+              <div class="Description-module__container--Zwqe8">
+                <div class="DescriptionItem-module__default--rAYpS IssuePullRequestDescription-module__descriptionItem--ndXf0">
+                  <div class="skeleton-text skeleton-description"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  return template;
+}
+
+// Helper to create skeleton CSS styles
+function createSkeletonStyles() {
+  const style = document.createElement('style');
+  style.id = 'ext-bookmarks-skeleton-styles';
+  style.textContent = `
+    .skeleton-box,
+    .skeleton-text {
+      border-radius: var(--borderRadius-small, 3px);
+      display: block;
+    }
+
+    .skeleton-icon {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+    }
+
+    .skeleton-title {
+      height: 1rem;
+      margin: 4px 0;
+    }
+
+    .skeleton-description {
+      height: 0.75rem;
+      margin: 2px 0;
+    }
+
+    /* Shimmer animation using background-position */
+    @keyframes skeleton-shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+
+    .skeleton-box,
+    .skeleton-text {
+      background: linear-gradient(
+        90deg,
+        var(--bgColor-muted, #656d7614) 25%,
+        var(--bgColor-default, #f6f8fa) 50%,
+        var(--bgColor-muted, #656d7614) 75%
+      );
+      background-size: 200% 100%;
+      animation: skeleton-shimmer 1.5s ease-in-out infinite;
+    }
+  `;
+  return style;
 }
 
 // Helper to create the large bookmarks view template
@@ -347,7 +437,6 @@ function createBookmarksViewTemplate() {
                   </div>
                 </div>
               </div>
-              <div id="bookmarks-loading" style="padding: 40px 20px; text-align: center; color: var(--fgColor-muted); display: none;">Loading bookmarked issues...</div>
               <div id="bookmarks-error" style="padding: 16px; color: #cf222e; background-color: #ffebe9; border: 1px solid #ff8182; border-radius: 6px; margin: 16px; display: none;"></div>
               <div id="bookmarks-empty" style="padding: 40px 20px; text-align: center; color: var(--fgColor-muted); display: none;">
                 <div style="font-size: 14px; margin-bottom: 8px;">No bookmarked issues yet</div>
@@ -366,6 +455,29 @@ function createBookmarksViewTemplate() {
 function getTemplate(name) {
   const template = document.getElementById(name);
   return template.content.cloneNode(true);
+}
+
+// Render skeleton placeholder items
+function renderSkeletonItems(count = 25) {
+  const fragment = document.createDocumentFragment();
+
+  for (let i = 0; i < count; i++) {
+    const skeleton = getTemplate('skeleton-item');
+
+    // Vary widths for visual interest (like GitHub does)
+    const titleWidth = 50 + Math.random() * 30; // 50-80%
+    const descWidth = 30 + Math.random() * 20;  // 30-50%
+
+    const titleEl = skeleton.querySelector('.skeleton-title');
+    const descEl = skeleton.querySelector('.skeleton-description');
+
+    if (titleEl) titleEl.style.width = `${titleWidth}%`;
+    if (descEl) descEl.style.width = `${descWidth}%`;
+
+    fragment.appendChild(skeleton);
+  }
+
+  return fragment;
 }
 
 // Inject the "Bookmarked" navigation item into the sidebar
@@ -875,22 +987,28 @@ async function loadAndRenderBookmarks() {
   const container = document.querySelector('[data-extension-bookmarks-container]');
   if (!container) return;
 
-  const loading = container.querySelector('#bookmarks-loading');
   const error = container.querySelector('#bookmarks-error');
   const empty = container.querySelector('#bookmarks-empty');
   const list = container.querySelector('#bookmarks-list');
+  const resultsSection = container.querySelector('#bookmarks-results-section');
 
-  loading.style.display = 'block';
+  // Show skeleton placeholders while loading (25 to match page size)
   error.style.display = 'none';
   empty.style.display = 'none';
-  list.replaceChildren();
+  // Hide header during loading - will show with actual count when data loads
+  const countHeading = container.querySelector('#bookmarks-count');
+  if (resultsSection) {
+    resultsSection.style.display = 'none';
+  }
+  list.replaceChildren(renderSkeletonItems(25));
 
   try {
     const bookmarks = await getBookmarks();
     const bookmarkIds = Object.keys(bookmarks);
 
     if (bookmarkIds.length === 0) {
-      loading.style.display = 'none';
+      list.replaceChildren();
+      if (resultsSection) resultsSection.style.display = 'none';
       empty.style.display = 'block';
       return;
     }
@@ -938,7 +1056,8 @@ async function loadAndRenderBookmarks() {
     }
 
     if (validIssues.length === 0) {
-      loading.style.display = 'none';
+      list.replaceChildren(); // Clear skeleton placeholders
+      if (resultsSection) resultsSection.style.display = 'none';
       if (failedCount > 0) {
         // All fetches failed - show error
         error.style.display = 'block';
@@ -959,28 +1078,27 @@ async function loadAndRenderBookmarks() {
     // Sort issues based on preference
     const sortedIssues = sortIssues(validIssues, bookmarks, sortOrder);
 
-    // Update result count and show results section
-    const resultsSection = container.querySelector('#bookmarks-results-section');
-    const countHeading = container.querySelector('#bookmarks-count');
+    // Show header with result count
     if (resultsSection && countHeading) {
       const count = sortedIssues.length;
       countHeading.textContent = `${count} result${count !== 1 ? 's' : ''}`;
       resultsSection.style.display = 'flex';
     }
 
-    // Render all issues
+    // Clear skeleton placeholders and render actual issues
+    list.replaceChildren();
     sortedIssues.forEach(issue => {
       const item = renderIssueItem(issue);
       list.appendChild(item);
     });
 
-    loading.style.display = 'none';
     setupFilterInput();
     setupSortDropdown();
 
   } catch (e) {
     console.error('[Bookmarked] Error loading bookmarks:', e);
-    loading.style.display = 'none';
+    list.replaceChildren(); // Clear skeleton placeholders
+    if (resultsSection) resultsSection.style.display = 'none';
     error.style.display = 'block';
     error.textContent = `Failed to load bookmarked issues: ${e.message}`;
   }
