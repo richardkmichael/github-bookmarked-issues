@@ -35,7 +35,7 @@ async function fetchIssueDetails(owner, repo, number, type) {
 // Get icon from template
 function getIcon(name) {
   const template = document.getElementById(`icon-${name}`);
-  return template.content.cloneNode(true).firstChild;
+  return template.content.firstElementChild.cloneNode(true);
 }
 
 // Display storage information
@@ -77,10 +77,14 @@ async function displayIssues(bookmarks) {
     return;
   }
 
-  // Fetch details for all bookmarked issues
-  const issuePromises = bookmarkIds.map(id => {
+  // Fetch details for all bookmarked issues, preserving bookmark ID
+  const issuePromises = bookmarkIds.map(async id => {
     const bookmark = bookmarks[id];
-    return fetchIssueDetails(bookmark.owner, bookmark.repo, bookmark.number, bookmark.type);
+    const issue = await fetchIssueDetails(bookmark.owner, bookmark.repo, bookmark.number, bookmark.type);
+    if (issue) {
+      issue._bookmarkId = id;  // Attach bookmark ID for removal
+    }
+    return issue;
   });
 
   const issues = await Promise.all(issuePromises);
@@ -132,8 +136,38 @@ async function displayIssues(bookmarks) {
     // Make whole item clickable
     const issueItem = item.querySelector('.issue-item');
     issueItem.addEventListener('click', (e) => {
-      if (e.target.tagName !== 'A') {
+      if (e.target.tagName !== 'A' && !e.target.closest('.remove-btn')) {
         window.open(issue.html_url, '_blank');
+      }
+    });
+
+    // Add remove button functionality
+    const removeBtn = item.querySelector('.remove-btn');
+    removeBtn.appendChild(getIcon('remove'));
+    removeBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+
+      const issueId = issue._bookmarkId;
+
+      try {
+        await browser.runtime.sendMessage({
+          type: 'UNBOOKMARK_ISSUE',
+          data: { id: issueId }
+        });
+
+        // Remove from DOM
+        issueItem.remove();
+
+        // Update storage info
+        await displayStorageInfo();
+
+        // Check if list is now empty
+        if (container.children.length === 0) {
+          emptyState.style.display = 'block';
+          copyAllBtn.disabled = true;
+        }
+      } catch (error) {
+        console.error('[Popup] Error removing bookmark:', error);
       }
     });
 
