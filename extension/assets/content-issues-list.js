@@ -12,6 +12,135 @@ let bookmarkNavItem = null;
 // Store original page title
 let originalTitle = null;
 
+// GitHub GraphQL endpoint and query definitions
+// Hashes may change when GitHub updates - uses discovery fallback if hardcoded hashes expire
+const GRAPHQL_ENDPOINT = 'https://github.com/_graphql';
+
+const GITHUB_QUERIES = {
+  // Main query - returns title, author, dates, state, repository
+  issueDashboard: {
+    name: 'IssueDashboardKnownViewPageQuery',
+    hash: 'e02318ebeb8613553613ac1ebdbb7a4b',
+    buildVariables: (searchQuery, skip = 0) => ({ query: searchQuery, skip }),
+    extractResults: (data) => data?.search?.edges?.map(e => e.node) || []
+  },
+
+  // Supplementary query - returns comment counts (takes node IDs)
+  issueRowSecondary: {
+    name: 'IssueRowSecondaryQuery',
+    hash: 'c5aa81956ee8f848ea72a183fef833c9',
+    buildVariables: (nodeIds) => ({ includeReactions: false, nodes: nodeIds }),
+    extractResults: (data) => data?.nodes || []
+  }
+};
+
+// Build search query string for batch fetching bookmarked issues
+function buildIssueSearchQuery(bookmarks) {
+  // Build: is:issue (repo:owner/repo1 in:number 123) OR (repo:owner/repo2 in:number 456)
+  const parts = bookmarks.map(b => `(repo:${b.owner}/${b.repo} in:number ${b.number})`);
+  return 'is:issue ' + parts.join(' OR ');
+}
+
+// Execute a GraphQL query with hash discovery fallback
+async function executeGraphQLQuery(queryDef, variables) {
+  const makeRequest = async (queryHash) => {
+    const url = GRAPHQL_ENDPOINT + '?body=' + encodeURIComponent(JSON.stringify({
+      persistedQueryName: queryDef.name,
+      query: queryHash,
+      variables: variables
+    }));
+
+    const response = await fetch(url, {
+      headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+      credentials: 'same-origin'
+    });
+
+    if (!response.ok) throw new Error(`GraphQL request failed: ${response.status}`);
+    return response.json();
+  };
+
+  // Try hardcoded hash first
+  let result = await makeRequest(queryDef.hash);
+
+  // Check for unknownQuery error - hash may have expired
+  if (result.errors?.some(e => e.type === 'unknownQuery')) {
+    console.warn(`[Bookmarked] Hardcoded hash expired for ${queryDef.name}, trying discovery...`);
+
+    // Try to get discovered hash from background script
+    const discovered = await browser.runtime.sendMessage({
+      type: 'GET_DISCOVERED_HASH',
+      queryName: queryDef.name
+    });
+
+    if (discovered?.hash) {
+      console.warn(`[Bookmarked] Using discovered hash for ${queryDef.name}: ${discovered.hash}`);
+      console.warn(`[Bookmarked] Please update extension with new hash!`);
+      result = await makeRequest(discovered.hash);
+
+      if (result.errors?.some(e => e.type === 'unknownQuery')) {
+        throw new Error(`Both hardcoded and discovered hashes expired for ${queryDef.name}`);
+      }
+    } else {
+      throw new Error(`Hash expired for ${queryDef.name} and no discovered hash available`);
+    }
+  }
+
+  return queryDef.extractResults(result.data);
+}
+
+// Batch fetch bookmarked issues via GraphQL (2 requests total)
+async function fetchBookmarkedIssuesViaGraphQL(bookmarks) {
+  if (bookmarks.length === 0) return [];
+
+  // Step 1: Fetch main data via search query
+  const searchQuery = buildIssueSearchQuery(bookmarks);
+  console.log('[Bookmarked] GraphQL search query:', searchQuery);
+
+  const dashboardResults = await executeGraphQLQuery(
+    GITHUB_QUERIES.issueDashboard,
+    GITHUB_QUERIES.issueDashboard.buildVariables(searchQuery)
+  );
+
+  console.log('[Bookmarked] GraphQL returned', dashboardResults.length, 'results');
+
+  // Step 2: Filter to exact matches (search returns partial number matches like 3508 matching 23508)
+  const exactMatches = dashboardResults.filter(node => {
+    const repo = `${node.repository.owner.login}/${node.repository.name}`;
+    return bookmarks.some(b => `${b.owner}/${b.repo}` === repo && b.number === node.number);
+  });
+
+  console.log('[Bookmarked] After exact match filter:', exactMatches.length, 'issues');
+
+  if (exactMatches.length === 0) return [];
+
+  // Step 3: Fetch comment counts for matched issues
+  const nodeIds = exactMatches.map(node => node.id);
+  const rowResults = await executeGraphQLQuery(
+    GITHUB_QUERIES.issueRowSecondary,
+    GITHUB_QUERIES.issueRowSecondary.buildVariables(nodeIds)
+  );
+
+  // Step 4: Merge and map to REST API-compatible format
+  const commentMap = new Map(rowResults.map(r => [r.id, r.totalCommentsCount || 0]));
+
+  return exactMatches.map(node => ({
+    number: node.number,
+    title: node.title,
+    state: node.state?.toLowerCase() || 'open',
+    html_url: `https://github.com/${node.repository.owner.login}/${node.repository.name}/issues/${node.number}`,
+    created_at: node.createdAt,
+    updated_at: node.updatedAt,
+    comments: commentMap.get(node.id) || 0,
+    user: node.author ? {
+      login: node.author.login,
+      html_url: `https://github.com/${node.author.login}`
+    } : null,
+    repository: {
+      full_name: `${node.repository.owner.login}/${node.repository.name}`
+    }
+  }));
+}
+
 // Setup templates (injected once into page)
 function setupTemplates() {
   if (document.getElementById('ext-bookmarks-templates')) return;
@@ -770,24 +899,50 @@ async function loadAndRenderBookmarks() {
     const sortResult = await browser.storage.sync.get(['bookmarks_sort_order']);
     const sortOrder = sortResult.bookmarks_sort_order || 'updated-desc';
 
-    // Fetch all issue details in parallel
-    const issuePromises = bookmarkIds.map(id => {
-      const bookmark = bookmarks[id];
-      return fetchIssueDetails(bookmark.owner, bookmark.repo, bookmark.number, bookmark.type);
-    });
+    // Convert bookmarks object to array for processing
+    const bookmarkArray = Object.values(bookmarks);
 
-    const issues = await Promise.all(issuePromises);
-    const validIssues = issues.filter(issue => issue && !issue._error);
-    const failedIssues = issues.filter(issue => issue && issue._error);
-    const failedCount = failedIssues.length;
+    let validIssues = [];
+    let failedCount = 0;
+
+    // Try batch GraphQL first (2 requests for all issues)
+    try {
+      console.log('[Bookmarked] Fetching issues via batch GraphQL...');
+      validIssues = await fetchBookmarkedIssuesViaGraphQL(bookmarkArray);
+      console.log('[Bookmarked] GraphQL batch fetch succeeded:', validIssues.length, 'issues');
+
+      // Check if any bookmarks weren't found
+      const foundCount = validIssues.length;
+      const totalCount = bookmarkArray.length;
+      if (foundCount < totalCount) {
+        failedCount = totalCount - foundCount;
+        console.warn('[Bookmarked] Some issues not found via GraphQL:', failedCount, 'of', totalCount);
+      }
+    } catch (graphqlError) {
+      console.warn('[Bookmarked] GraphQL batch fetch failed, falling back to REST API:', graphqlError.message);
+
+      // Fallback: Fetch all issue details individually via REST API
+      const issuePromises = bookmarkArray.map(bookmark =>
+        fetchIssueDetails(bookmark.owner, bookmark.repo, bookmark.number, bookmark.type)
+      );
+
+      const issues = await Promise.all(issuePromises);
+      validIssues = issues.filter(issue => issue && !issue._error);
+      const failedIssues = issues.filter(issue => issue && issue._error);
+      failedCount = failedIssues.length;
+
+      if (failedCount > 0) {
+        const errors = failedIssues.map(issue => issue._error).join(', ');
+        console.warn('[Bookmarked] REST API errors:', errors);
+      }
+    }
 
     if (validIssues.length === 0) {
       loading.style.display = 'none';
       if (failedCount > 0) {
         // All fetches failed - show error
         error.style.display = 'block';
-        const errors = failedIssues.map(issue => issue._error).join(', ');
-        error.textContent = `Failed to load issue details from GitHub API: ${errors}`;
+        error.textContent = `Failed to load issue details. You may need to log in to GitHub.`;
       } else {
         // Genuinely no bookmarks
         empty.style.display = 'block';
@@ -798,8 +953,7 @@ async function loadAndRenderBookmarks() {
     // Show warning if some (but not all) issues failed to load
     if (failedCount > 0) {
       error.style.display = 'block';
-      const errors = failedIssues.map(issue => issue._error).join(', ');
-      error.textContent = `Warning: ${failedCount} of ${issues.length} issues failed to load: ${errors}`;
+      error.textContent = `Warning: ${failedCount} of ${bookmarkArray.length} issues could not be loaded.`;
     }
 
     // Sort issues based on preference

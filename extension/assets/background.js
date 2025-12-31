@@ -8,6 +8,39 @@ if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
 // Storage key for bookmarked issues
 const STORAGE_KEY = 'bookmarked_issues';
 
+// Cache for discovered GraphQL query hashes (keyed by query name)
+// Used as fallback when hardcoded hashes expire
+const discoveredHashes = new Map();
+
+// Listen for responses from GitHub to capture GraphQL query hashes from Link headers
+browser.webRequest.onHeadersReceived.addListener(
+  (details) => {
+    // Only process main frame navigation
+    if (details.type !== 'main_frame') return;
+
+    // Look for Link header with GraphQL preload hints
+    const linkHeader = details.responseHeaders?.find(h => h.name.toLowerCase() === 'link');
+    if (!linkHeader || !linkHeader.value.includes('_graphql')) return;
+
+    // Extract all query hashes from Link header (may contain multiple preloads)
+    const matches = linkHeader.value.matchAll(/body=([^&>\s]+)/g);
+    for (const match of matches) {
+      try {
+        const decoded = decodeURIComponent(match[1]);
+        const parsed = JSON.parse(decoded);
+        if (parsed.persistedQueryName && parsed.query) {
+          discoveredHashes.set(parsed.persistedQueryName, parsed.query);
+          console.log('[Background] Discovered hash for', parsed.persistedQueryName, ':', parsed.query);
+        }
+      } catch (e) {
+        // Skip malformed entries
+      }
+    }
+  },
+  { urls: ['https://github.com/*'] },
+  ['responseHeaders']
+);
+
 // Get all bookmarked issues
 async function getBookmarkedIssues() {
   const result = await browser.storage.sync.get(STORAGE_KEY);
@@ -107,6 +140,12 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
         console.error('[Background] Error getting storage info:', error);
         sendResponse({ error: error.message });
       });
+    return true;
+  }
+
+  if (message.type === 'GET_DISCOVERED_HASH') {
+    const hash = discoveredHashes.get(message.queryName);
+    sendResponse({ hash: hash || null });
     return true;
   }
 
