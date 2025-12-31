@@ -431,17 +431,17 @@ function createBookmarksViewTemplate() {
                             </div>
                           </div>
                         </div>
-                        <ul id="bookmarks-list" class="ListView-module__ul--A_8jF" role="list" data-listview-component="items-list" data-density="default" tabindex="-1" aria-labelledby="bookmarks-list-container"></ul>
+                        <div id="bookmarks-list" class="ListView-module__ul--A_8jF" data-listview-component="items-list" data-density="default" tabindex="-1">
+                          <div id="bookmarks-empty" class="blankslate" role="region" aria-live="polite" aria-atomic="true" style="display: none;">
+                            <h3 class="blankslate-heading">No bookmarked issues</h3>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
               <div id="bookmarks-error" style="padding: 16px; color: #cf222e; background-color: #ffebe9; border: 1px solid #ff8182; border-radius: 6px; margin: 16px; display: none;"></div>
-              <div id="bookmarks-empty" style="padding: 40px 20px; text-align: center; color: var(--fgColor-muted); display: none;">
-                <div style="font-size: 14px; margin-bottom: 8px;">No bookmarked issues yet</div>
-                <div style="font-size: 12px;">Visit any issue page and click the bookmark button to get started</div>
-              </div>
             </div>
           </div>
         </div>
@@ -1007,9 +1007,14 @@ async function loadAndRenderBookmarks() {
     const bookmarkIds = Object.keys(bookmarks);
 
     if (bookmarkIds.length === 0) {
-      list.replaceChildren();
-      if (resultsSection) resultsSection.style.display = 'none';
+      // Clear list items but preserve empty state element
+      list.replaceChildren(empty);
       empty.style.display = 'block';
+      // Show header with 0 results
+      if (resultsSection && countHeading) {
+        countHeading.textContent = '0 results';
+        resultsSection.style.display = 'flex';
+      }
       return;
     }
 
@@ -1056,8 +1061,13 @@ async function loadAndRenderBookmarks() {
     }
 
     if (validIssues.length === 0) {
-      list.replaceChildren(); // Clear skeleton placeholders
-      if (resultsSection) resultsSection.style.display = 'none';
+      // Clear list items but preserve empty state element
+      list.replaceChildren(empty);
+      // Show header with 0 results
+      if (resultsSection && countHeading) {
+        countHeading.textContent = '0 results';
+        resultsSection.style.display = 'flex';
+      }
       if (failedCount > 0) {
         // All fetches failed - show error
         error.style.display = 'block';
