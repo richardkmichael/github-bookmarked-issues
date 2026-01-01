@@ -22,10 +22,10 @@ function parseBookmarkId(id) {
   };
 }
 
-// Extract bookmark ID from a GitHub issue/PR URL
+// Extract bookmark ID from a GitHub issue URL
 function getBookmarkIdFromUrl(url) {
-  const match = url.match(/github\.com\/([^/]+)\/([^/]+)\/(issues|pull)\/(\d+)/);
-  return match ? makeBookmarkId(match[1], match[2], match[3], match[4]) : null;
+  const match = url.match(/github\.com\/([^/]+)\/([^/]+)\/issues\/(\d+)/);
+  return match ? makeBookmarkId(match[1], match[2], 'issues', match[3]) : null;
 }
 
 // Get icon SVG from template element

@@ -242,9 +242,244 @@ function showError(message) {
   document.getElementById('loading').style.display = 'none';
 }
 
+// Store validated import data between paste and import
+let pendingImport = null;
+
+// Parse list items and extract GitHub issue URLs
+// Returns { valid: [...bookmarkIds], invalid: number }
+function parseImportText(text) {
+  const valid = [];
+  const seen = new Set();  // Track duplicates within paste
+  let invalid = 0;
+
+  const lines = text.split('\n');
+  for (const line of lines) {
+    const trimmed = line.trim();
+
+    // Only process list items (- or *)
+    if (!trimmed.startsWith('- ') && !trimmed.startsWith('* ')) {
+      continue;
+    }
+
+    // Extract any URL from this list item
+    const urlMatch = trimmed.match(/https?:\/\/[^\s)]+/);
+    if (!urlMatch) {
+      invalid++;
+      continue;
+    }
+
+    // Check if it's a valid GitHub issue URL
+    const bookmarkId = getBookmarkIdFromUrl(urlMatch[0]);
+    if (!bookmarkId) {
+      invalid++;
+      continue;
+    }
+
+    // Skip duplicates within paste
+    if (seen.has(bookmarkId)) {
+      continue;
+    }
+    seen.add(bookmarkId);
+    valid.push(bookmarkId);
+  }
+
+  return { valid, invalid };
+}
+
+// Validate pasted text and categorize items
+async function validateImportText(text) {
+  const parsed = parseImportText(text);
+
+  // Get existing bookmarks to identify duplicates
+  const response = await browser.runtime.sendMessage({ type: 'GET_BOOKMARKS' });
+  const existingIds = new Set(Object.keys(response.bookmarks || {}));
+
+  const newItems = [];
+  let duplicates = 0;
+
+  for (const bookmarkId of parsed.valid) {
+    if (existingIds.has(bookmarkId)) {
+      duplicates++;
+    } else {
+      newItems.push(bookmarkId);
+    }
+  }
+
+  return {
+    valid: newItems,
+    invalid: parsed.invalid,
+    duplicates
+  };
+}
+
+// Update the validation display below textarea
+function updateValidationDisplay(validation) {
+  const container = document.getElementById('import-validation');
+  const submitBtn = document.getElementById('import-submit-btn');
+
+  container.replaceChildren();
+
+  // Only show if there's something to display
+  if (validation.valid.length === 0 && validation.invalid === 0 && validation.duplicates === 0) {
+    container.style.display = 'none';
+    submitBtn.disabled = true;
+    return;
+  }
+
+  // Valid items (success - green)
+  if (validation.valid.length > 0) {
+    const item = document.createElement('span');
+    item.className = 'import-validation-item import-validation--success';
+    item.appendChild(getIcon('check-circle'));
+    item.appendChild(document.createTextNode(`${validation.valid.length} valid`));
+    container.appendChild(item);
+  }
+
+  // Duplicate items (info - blue)
+  if (validation.duplicates > 0) {
+    const item = document.createElement('span');
+    item.className = 'import-validation-item import-validation--info';
+    item.appendChild(getIcon('info'));
+    item.appendChild(document.createTextNode(`${validation.duplicates} duplicate (ignored)`));
+    container.appendChild(item);
+  }
+
+  // Invalid items (danger - red)
+  if (validation.invalid > 0) {
+    const item = document.createElement('span');
+    item.className = 'import-validation-item import-validation--danger';
+    item.appendChild(getIcon('x-circle'));
+    item.appendChild(document.createTextNode(`${validation.invalid} invalid`));
+    container.appendChild(item);
+  }
+
+  container.style.display = 'flex';
+  submitBtn.disabled = validation.valid.length === 0;
+}
+
+// Import the pre-validated bookmarks
+async function importValidatedBookmarks() {
+  if (!pendingImport || pendingImport.valid.length === 0) {
+    return { added: 0 };
+  }
+
+  let added = 0;
+  for (const bookmarkId of pendingImport.valid) {
+    const data = parseBookmarkId(bookmarkId);
+    data.id = bookmarkId;
+    data.bookmarkedAt = Date.now();
+
+    await browser.runtime.sendMessage({
+      type: 'BOOKMARK_ISSUE',
+      data
+    });
+    added++;
+  }
+
+  return { added };
+}
+
+// Show import section, hide issue list
+function showImportSection() {
+  document.getElementById('import-section').style.display = 'block';
+  document.getElementById('issues-container').style.display = 'none';
+  document.getElementById('empty-state').style.display = 'none';
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('import-textarea').value = '';
+  document.getElementById('import-validation').style.display = 'none';
+  document.getElementById('import-submit-btn').disabled = true;
+  pendingImport = null;
+  document.getElementById('import-textarea').focus();
+}
+
+// Hide import section, show issue list
+function hideImportSection() {
+  document.getElementById('import-section').style.display = 'none';
+  document.getElementById('issues-container').style.display = 'block';
+}
+
+// Wire up import UI
+function setupImportUI() {
+  const importBtn = document.getElementById('import-btn');
+  const importSubmitBtn = document.getElementById('import-submit-btn');
+  const importCancelBtn = document.getElementById('import-cancel-btn');
+  const importTextarea = document.getElementById('import-textarea');
+
+  importBtn.addEventListener('click', showImportSection);
+
+  // Validate on paste
+  importTextarea.addEventListener('paste', async (e) => {
+    // Wait for paste to complete
+    setTimeout(async () => {
+      const text = importTextarea.value.trim();
+      if (!text) {
+        pendingImport = null;
+        updateValidationDisplay({ valid: [], invalid: 0, duplicates: 0 });
+        return;
+      }
+
+      pendingImport = await validateImportText(text);
+      updateValidationDisplay(pendingImport);
+    }, 0);
+  });
+
+  // Also validate on input (for manual typing or edits)
+  importTextarea.addEventListener('input', async () => {
+    const text = importTextarea.value.trim();
+    if (!text) {
+      pendingImport = null;
+      updateValidationDisplay({ valid: [], invalid: 0, duplicates: 0 });
+      return;
+    }
+
+    pendingImport = await validateImportText(text);
+    updateValidationDisplay(pendingImport);
+  });
+
+  importCancelBtn.addEventListener('click', async () => {
+    hideImportSection();
+    document.getElementById('loading').style.display = 'flex';
+    const response = await browser.runtime.sendMessage({ type: 'GET_BOOKMARKS' });
+    await displayIssues(response.bookmarks);
+  });
+
+  importSubmitBtn.addEventListener('click', async () => {
+    if (!pendingImport || pendingImport.valid.length === 0) {
+      return;
+    }
+
+    importSubmitBtn.disabled = true;
+    importSubmitBtn.textContent = 'Importing...';
+
+    try {
+      const results = await importValidatedBookmarks();
+
+      if (results.added > 0) {
+        importSubmitBtn.textContent = `${results.added} imported`;
+
+        // Brief delay to show success, then refresh
+        setTimeout(async () => {
+          hideImportSection();
+          document.getElementById('loading').style.display = 'flex';
+          await displayStorageInfo();
+          const response = await browser.runtime.sendMessage({ type: 'GET_BOOKMARKS' });
+          await displayIssues(response.bookmarks);
+        }, 500);
+      }
+    } catch {
+      // Reset button on error
+      importSubmitBtn.disabled = false;
+      importSubmitBtn.textContent = 'Import';
+    }
+  });
+}
+
 // Initialize popup
 async function init() {
   try {
+    // Wire up import UI
+    setupImportUI();
+
     // Display storage info
     await displayStorageInfo();
 
