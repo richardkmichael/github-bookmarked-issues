@@ -269,6 +269,219 @@ test.describe('GitHub Bookmarked Issues Extension', () => {
     });
   });
 
+  test.describe('Options Page', () => {
+    test('opens and displays UI', async () => {
+      const optionsPage = await context.newPage();
+      await optionsPage.goto(`chrome-extension://${extensionId}/assets/options.html`);
+
+      await expect(optionsPage.locator('h1')).toContainText('Settings');
+      await expect(optionsPage.locator('#pat-input')).toBeVisible();
+      await expect(optionsPage.locator('#save-btn')).toBeVisible();
+      await expect(optionsPage.locator('#test-btn')).toBeVisible();
+      await expect(optionsPage.locator('#toggle-visibility-btn')).toBeVisible();
+
+      await optionsPage.close();
+    });
+
+    test('eyeball toggle shows and hides token', async () => {
+      const optionsPage = await context.newPage();
+      await optionsPage.goto(`chrome-extension://${extensionId}/assets/options.html`);
+
+      const input = optionsPage.locator('#pat-input');
+      const toggleBtn = optionsPage.locator('#toggle-visibility-btn');
+
+      // Initially password type (hidden)
+      await expect(input).toHaveAttribute('type', 'password');
+      await expect(toggleBtn).toHaveAttribute('aria-pressed', 'false');
+
+      // Click to show
+      await toggleBtn.click();
+      await expect(input).toHaveAttribute('type', 'text');
+      await expect(toggleBtn).toHaveAttribute('aria-pressed', 'true');
+
+      // Click to hide again
+      await toggleBtn.click();
+      await expect(input).toHaveAttribute('type', 'password');
+      await expect(toggleBtn).toHaveAttribute('aria-pressed', 'false');
+
+      await optionsPage.close();
+    });
+
+    test('test button validates format before testing', async () => {
+      const optionsPage = await context.newPage();
+      await optionsPage.goto(`chrome-extension://${extensionId}/assets/options.html`);
+
+      const input = optionsPage.locator('#pat-input');
+      const testBtn = optionsPage.locator('#test-btn');
+      const message = optionsPage.locator('#message');
+
+      // Enter invalid token format
+      await input.fill('invalid_token');
+      await testBtn.click();
+
+      await expect(message).toBeVisible();
+      await expect(message).toContainText('Invalid token format');
+
+      await optionsPage.close();
+    });
+
+    test('save button validates format', async () => {
+      const optionsPage = await context.newPage();
+      await optionsPage.goto(`chrome-extension://${extensionId}/assets/options.html`);
+
+      const input = optionsPage.locator('#pat-input');
+      const saveBtn = optionsPage.locator('#save-btn');
+      const message = optionsPage.locator('#message');
+
+      // Enter invalid token format
+      await input.fill('ghp_classic_token_not_allowed');
+      await saveBtn.click();
+
+      await expect(message).toBeVisible();
+      await expect(message).toContainText('Invalid token format');
+
+      await optionsPage.close();
+    });
+
+    test('shows error for empty token', async () => {
+      const optionsPage = await context.newPage();
+      await optionsPage.goto(`chrome-extension://${extensionId}/assets/options.html`);
+
+      const saveBtn = optionsPage.locator('#save-btn');
+      const message = optionsPage.locator('#message');
+
+      // Click save with empty input
+      await saveBtn.click();
+
+      await expect(message).toBeVisible();
+      await expect(message).toContainText('Enter a token');
+
+      await optionsPage.close();
+    });
+
+    test('token is used in API requests', async () => {
+      const testToken = 'github_pat_11ABCDEFGHIJKLMNOPQRST_1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW';
+
+      // Store the token
+      const setupPage = await context.newPage();
+      await setupPage.goto(`chrome-extension://${extensionId}/assets/options.html`);
+      await setupPage.evaluate((token) => {
+        return new Promise((resolve) => {
+          chrome.storage.sync.set({ github_pat: token }, resolve);
+        });
+      }, testToken);
+      await setupPage.close();
+
+      // Add a bookmark
+      const testBookmarks = {
+        'microsoft/playwright/issues/999': {
+          owner: 'microsoft',
+          repo: 'playwright',
+          number: 999,
+          type: 'issues',
+          bookmarkedAt: Date.now()
+        }
+      };
+      await addBookmarks(context, testBookmarks);
+
+      // Track Authorization header from intercepted requests
+      let capturedAuthHeader = null;
+      await context.route('**/api.github.com/repos/**', async (route) => {
+        capturedAuthHeader = route.request().headers()['authorization'];
+        // Return mock response
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            id: 999,
+            number: 999,
+            title: 'Test Issue',
+            state: 'open',
+            html_url: 'https://github.com/microsoft/playwright/issues/999',
+            updated_at: new Date().toISOString(),
+            comments: 0
+          })
+        });
+      });
+
+      // Open popup to trigger API request
+      const popupPage = await context.newPage();
+      await popupPage.goto(`chrome-extension://${extensionId}/assets/popup.html`);
+      await popupPage.waitForTimeout(2000);
+
+      // Verify token was used
+      expect(capturedAuthHeader).toBe(`Bearer ${testToken}`);
+
+      // Cleanup
+      await context.unroute('**/api.github.com/repos/**');
+      await popupPage.close();
+
+      // Clear the token
+      const cleanupPage = await context.newPage();
+      await cleanupPage.goto(`chrome-extension://${extensionId}/assets/options.html`);
+      await cleanupPage.evaluate(() => {
+        return new Promise((resolve) => {
+          chrome.storage.sync.remove('github_pat', resolve);
+        });
+      });
+      await cleanupPage.close();
+    });
+
+    test('requests work without token', async () => {
+      // Ensure no token is set
+      const setupPage = await context.newPage();
+      await setupPage.goto(`chrome-extension://${extensionId}/assets/options.html`);
+      await setupPage.evaluate(() => {
+        return new Promise((resolve) => {
+          chrome.storage.sync.remove('github_pat', resolve);
+        });
+      });
+      await setupPage.close();
+
+      // Add a bookmark
+      const testBookmarks = {
+        'microsoft/playwright/issues/888': {
+          owner: 'microsoft',
+          repo: 'playwright',
+          number: 888,
+          type: 'issues',
+          bookmarkedAt: Date.now()
+        }
+      };
+      await addBookmarks(context, testBookmarks);
+
+      // Track Authorization header
+      let capturedAuthHeader = null;
+      await context.route('**/api.github.com/repos/**', async (route) => {
+        capturedAuthHeader = route.request().headers()['authorization'];
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            id: 888,
+            number: 888,
+            title: 'Test Issue Without Token',
+            state: 'open',
+            html_url: 'https://github.com/microsoft/playwright/issues/888',
+            updated_at: new Date().toISOString(),
+            comments: 0
+          })
+        });
+      });
+
+      // Open popup
+      const popupPage = await context.newPage();
+      await popupPage.goto(`chrome-extension://${extensionId}/assets/popup.html`);
+      await popupPage.waitForTimeout(2000);
+
+      // Verify no Authorization header
+      expect(capturedAuthHeader).toBeUndefined();
+
+      await context.unroute('**/api.github.com/repos/**');
+      await popupPage.close();
+    });
+  });
+
   // ============================================================
   // LOGIN REQUIRED - github.com/issues requires authentication
   // ============================================================

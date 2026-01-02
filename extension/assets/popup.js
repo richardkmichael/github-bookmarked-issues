@@ -8,24 +8,26 @@ if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
 
 // Popup script to display bookmarked issues
 
-// Fetch issue details from GitHub API
+// Fetch issue details via background script (uses PAT and caching)
 async function fetchIssueDetails(owner, repo, number, type) {
-  const endpoint = type === 'pull'
-    ? `https://api.github.com/repos/${owner}/${repo}/pulls/${number}`
-    : `https://api.github.com/repos/${owner}/${repo}/issues/${number}`;
-
   try {
-    const response = await fetch(endpoint, {
-      headers: {
-        'Accept': 'application/vnd.github.v3+json'
-      }
+    const response = await browser.runtime.sendMessage({
+      type: 'FETCH_ISSUE_DETAILS',
+      data: { owner, repo, number, type }
     });
 
-    if (!response.ok) {
-      throw new Error(`GitHub API error: ${response.status}`);
+    if (!response.success) {
+      if (response.error === 'RATE_LIMITED') {
+        return { _rateLimited: true };
+      }
+      throw new Error(response.error);
     }
 
-    return await response.json();
+    // Attach metadata for UI handling
+    const issue = response.data;
+    issue._fromCache = response.fromCache;
+    issue._fetchedAt = response.fetchedAt;
+    return issue;
   } catch (error) {
     console.error('[Popup] Error fetching issue details:', error);
     return null;
@@ -82,12 +84,27 @@ async function displayIssues(bookmarks) {
   });
 
   const issues = await Promise.all(issuePromises);
-  const validIssues = issues.filter(issue => issue !== null);
+
+  // Check for rate limiting (any issue with _rateLimited flag)
+  const rateLimitedCount = issues.filter(issue => issue && issue._rateLimited).length;
+  const validIssues = issues.filter(issue => issue !== null && !issue._rateLimited);
 
   loading.style.display = 'none';
 
-  if (validIssues.length === 0) {
+  // Show rate limit warning if any issues couldn't be fetched
+  if (rateLimitedCount > 0) {
+    showRateLimitWarning(rateLimitedCount, validIssues.length);
+  }
+
+  if (validIssues.length === 0 && rateLimitedCount === 0) {
     emptyState.style.display = 'block';
+    copyAllBtn.disabled = true;
+    return;
+  }
+
+  if (validIssues.length === 0 && rateLimitedCount > 0) {
+    // All issues rate limited with no cache - show error
+    showRateLimitError(rateLimitedCount);
     copyAllBtn.disabled = true;
     return;
   }
@@ -216,6 +233,48 @@ function showError(message) {
   error.textContent = message;
   error.style.display = 'block';
 
+  document.getElementById('loading').style.display = 'none';
+}
+
+// Show rate limit warning (some issues loaded from cache, some couldn't be fetched)
+function showRateLimitWarning(rateLimitedCount, cachedCount) {
+  const warning = document.getElementById('rate-limit-warning');
+  if (!warning) return;
+
+  const message = warning.querySelector('.rate-limit-message');
+  if (cachedCount > 0) {
+    message.textContent = `${rateLimitedCount} issue(s) couldn't be loaded (rate limit). Showing ${cachedCount} from cache.`;
+  } else {
+    message.textContent = `${rateLimitedCount} issue(s) couldn't be loaded due to API rate limit.`;
+  }
+
+  warning.style.display = 'block';
+}
+
+// Show rate limit error (no issues could be loaded)
+function showRateLimitError(count) {
+  const error = document.getElementById('error');
+  error.className = 'error-message rate-limit-error';
+  error.innerHTML = '';
+
+  const message = document.createElement('div');
+  message.textContent = `Rate limit exceeded. ${count} bookmarked issue(s) couldn't be loaded.`;
+  error.appendChild(message);
+
+  const hint = document.createElement('div');
+  hint.className = 'rate-limit-hint';
+  hint.textContent = 'Add a GitHub token in Settings for higher rate limits (5,000/hour vs 60/hour).';
+  error.appendChild(hint);
+
+  const settingsBtn = document.createElement('button');
+  settingsBtn.className = 'btn btn-small';
+  settingsBtn.textContent = 'Open Settings';
+  settingsBtn.addEventListener('click', () => {
+    browser.runtime.openOptionsPage();
+  });
+  error.appendChild(settingsBtn);
+
+  error.style.display = 'block';
   document.getElementById('loading').style.display = 'none';
 }
 
@@ -456,6 +515,11 @@ async function init() {
   try {
     // Wire up import UI
     setupImportUI();
+
+    // Wire up settings button
+    document.getElementById('settings-btn').addEventListener('click', () => {
+      browser.runtime.openOptionsPage();
+    });
 
     // Display storage info
     await displayStorageInfo();

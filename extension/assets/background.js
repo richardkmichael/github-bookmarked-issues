@@ -8,6 +8,32 @@ if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
 // Storage keys
 const STORAGE_KEY = 'bookmarked_issues';
 const HASHES_KEY = 'discovered_hashes';
+const PAT_KEY = 'github_pat';
+const CACHE_KEY = 'issue_cache';
+
+// Get PAT from storage
+async function getPat() {
+  const result = await browser.storage.sync.get(PAT_KEY);
+  return result[PAT_KEY] || null;
+}
+
+// Get cached issue from storage.local
+async function getCachedIssue(cacheKey) {
+  const result = await browser.storage.local.get(CACHE_KEY);
+  const cache = result[CACHE_KEY] || {};
+  return cache[cacheKey] || null;
+}
+
+// Save issue to cache in storage.local
+async function setCachedIssue(cacheKey, data) {
+  const result = await browser.storage.local.get(CACHE_KEY);
+  const cache = result[CACHE_KEY] || {};
+  cache[cacheKey] = {
+    data,
+    fetchedAt: Date.now()
+  };
+  await browser.storage.local.set({ [CACHE_KEY]: cache });
+}
 
 // Runtime cache for discovered GraphQL query hashes (keyed by query name)
 // Persisted to storage.sync so they survive service worker restarts
@@ -189,29 +215,72 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
+  if (message.type === 'GET_PAT') {
+    getPat()
+      .then(pat => sendResponse({ hasPat: !!pat }))
+      .catch(error => {
+        console.error('[Background] Error getting PAT:', error);
+        sendResponse({ hasPat: false, error: error.message });
+      });
+    return true;
+  }
+
   if (message.type === 'FETCH_ISSUE_DETAILS') {
     const { owner, repo, type, number } = message.data;
     const endpoint = type === 'pull'
       ? `https://api.github.com/repos/${owner}/${repo}/pulls/${number}`
       : `https://api.github.com/repos/${owner}/${repo}/issues/${number}`;
+    const cacheKey = `${owner}/${repo}/${type}s/${number}`;
 
     console.log('[Background] Fetching issue:', endpoint);
 
-    fetch(endpoint, {
-      headers: {
+    // Get PAT for authenticated requests
+    getPat().then(pat => {
+      const headers = {
         'Accept': 'application/vnd.github.v3+json'
+      };
+      if (pat) {
+        headers['Authorization'] = `Bearer ${pat}`;
       }
+
+      return fetch(endpoint, { headers });
     })
       .then(async response => {
+        // Extract rate limit headers
+        const rateLimit = {
+          limit: response.headers.get('X-RateLimit-Limit'),
+          remaining: response.headers.get('X-RateLimit-Remaining'),
+          reset: response.headers.get('X-RateLimit-Reset'),
+          used: response.headers.get('X-RateLimit-Used')
+        };
+
         if (!response.ok) {
           const statusText = response.statusText || 'Unknown Error';
+          const isRateLimited = response.status === 403 &&
+            (rateLimit.remaining === '0' || response.headers.get('X-RateLimit-Remaining') === '0');
+
+          if (isRateLimited) {
+            // Try to return cached data on rate limit
+            const cached = await getCachedIssue(cacheKey);
+            if (cached) {
+              console.log('[Background] Rate limited, returning cached data for:', cacheKey);
+              return { data: cached.data, rateLimit, fromCache: true, fetchedAt: cached.fetchedAt };
+            }
+            throw new Error('RATE_LIMITED');
+          }
           throw new Error(`${response.status} ${statusText}`);
         }
-        return response.json();
+
+        const data = await response.json();
+
+        // Cache the successful response
+        await setCachedIssue(cacheKey, data);
+
+        return { data, rateLimit, fromCache: false };
       })
-      .then(data => {
-        console.log('[Background] Successfully fetched issue:', `${owner}/${repo}#${number}`);
-        sendResponse({ success: true, data });
+      .then(({ data, rateLimit, fromCache, fetchedAt }) => {
+        console.log('[Background] Successfully fetched issue:', `${owner}/${repo}#${number}`, fromCache ? '(cached)' : '');
+        sendResponse({ success: true, data, rateLimit, fromCache, fetchedAt });
       })
       .catch(error => {
         console.error('[Background] Error fetching issue:', endpoint, error);

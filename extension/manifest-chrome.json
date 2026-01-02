@@ -25,6 +25,10 @@
       "128": "assets/icon.svg"
     }
   },
+  "options_ui": {
+    "page": "assets/options.html",
+    "open_in_tab": false
+  },
   "icons": {
     "128": "assets/icon.svg"
   },
