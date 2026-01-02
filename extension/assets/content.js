@@ -3,7 +3,7 @@ if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
   globalThis.browser = chrome;
 }
 
-// Content script to add bookmark button to GitHub issue/PR pages
+// Content script to add bookmark button to GitHub issue pages
 
 (function() {
   'use strict';
@@ -78,23 +78,23 @@ if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
   // Extension button marker
   const BOOKMARK_BUTTON_ATTR = 'data-extension-bookmark';
 
-  // Extract issue/PR data from current page
+  // Extract issue data from current page
   function getIssueData() {
-    const urlMatch = window.location.pathname.match(/^\/([^/]+)\/([^/]+)\/(issues|pull)\/(\d+)/);
+    const urlMatch = window.location.pathname.match(/^\/([^/]+)\/([^/]+)\/issues\/(\d+)/);
 
     if (!urlMatch) {
       return null;
     }
 
-    const [, owner, repo, type, number] = urlMatch;
+    const [, owner, repo, number] = urlMatch;
     const issueTitle = document.querySelector('.js-issue-title, h1.gh-header-title');
     const title = issueTitle ? issueTitle.textContent.trim() : '';
 
     return {
-      id: makeBookmarkId(owner, repo, type, number),
+      id: makeBookmarkId(owner, repo, 'issues', number),
       owner,
       repo,
-      type,
+      type: 'issues',
       number: parseInt(number, 10),
       title,
       url: window.location.href,
@@ -159,7 +159,7 @@ if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
   async function insertBookmarkButton() {
     const issueData = getIssueData();
     if (!issueData) {
-      console.log('[GitHub Bookmarked Issues] Not on an issue/PR page');
+      console.log('[GitHub Bookmarked Issues] Not on an issue page');
       return;
     }
 

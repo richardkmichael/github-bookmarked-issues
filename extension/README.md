@@ -47,8 +47,8 @@ For permanent installation in Firefox:
 
 ## Usage
 
-1. **Bookmark to issues on GitHub**:
-   - Navigate to any GitHub issue or pull request
+1. **Bookmark issues on GitHub**:
+   - Navigate to any GitHub issue
    - Click the "Bookmark" button
    - The extension will automatically capture and store it
 
@@ -97,7 +97,7 @@ extension/
 **How it works:**
 
 1. **Content Script** (`content.js`):
-   - Injected on GitHub issue/PR pages
+   - Injected on GitHub issue pages
    - Monitors bookmark/unbookmark button clicks
    - Sends messages to background script
 

@@ -702,7 +702,7 @@ function renderIssueItem(issue) {
   // Extract repo name
   let repoName = issue.repository?.full_name;
   if (!repoName && issue.html_url) {
-    const match = issue.html_url.match(/github\.com\/([^/]+)\/([^/]+)\/(issues|pull)/);
+    const match = issue.html_url.match(/github\.com\/([^/]+)\/([^/]+)\/issues/);
     if (match) repoName = `${match[1]}/${match[2]}`;
   }
   repoName = repoName || 'unknown/repository';
@@ -891,9 +891,9 @@ function renderIssueItem(issue) {
   return wrapper;
 }
 
-// Extract repository name from GitHub URL
+// Extract repository name from GitHub issue URL
 function getRepoFromUrl(url) {
-  const match = url.match(/github\.com\/([^/]+)\/([^/]+)\/(issues|pull)/);
+  const match = url.match(/github\.com\/([^/]+)\/([^/]+)\/issues/);
   return match ? `${match[1]}/${match[2]}` : 'unknown/repository';
 }
 

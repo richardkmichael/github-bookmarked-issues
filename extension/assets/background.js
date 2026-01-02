@@ -226,11 +226,9 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 
   if (message.type === 'FETCH_ISSUE_DETAILS') {
-    const { owner, repo, type, number } = message.data;
-    const endpoint = type === 'pull'
-      ? `https://api.github.com/repos/${owner}/${repo}/pulls/${number}`
-      : `https://api.github.com/repos/${owner}/${repo}/issues/${number}`;
-    const cacheKey = `${owner}/${repo}/${type}s/${number}`;
+    const { owner, repo, number } = message.data;
+    const endpoint = `https://api.github.com/repos/${owner}/${repo}/issues/${number}`;
+    const cacheKey = `${owner}/${repo}/issues/${number}`;
 
     console.log('[Background] Fetching issue:', endpoint);
 

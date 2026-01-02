@@ -41,8 +41,7 @@
       "run_at": "document_end",
       "matches": [
         "https://github.com/*/*/issues",
-        "https://github.com/*/*/issues/*",
-        "https://github.com/*/*/pull/*"
+        "https://github.com/*/*/issues/*"
       ],
       "js": [
         "assets/shared.js",
