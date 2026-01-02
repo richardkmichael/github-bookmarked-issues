@@ -389,8 +389,6 @@ This creates an architectural asymmetry:
 - No shared data-fetching code between them is practical
 
 Mitigation strategies for popup rate limits:
-- Request a GitHub PAT from user (5,000/hour vs 60/hour)
-- Cache fetched issue data in storage
-- Limit display count (e.g., 20 most recent)
-- Refresh on user action rather than every open
-- Accept stale data with manual refresh option
+- Fine-grained PAT via extension options page (5,000/hour vs 60/hour)
+- Issue data cached in `storage.local` with automatic fallback when rate-limited
+- Rate limit errors show cached data if available, otherwise prompt for PAT setup

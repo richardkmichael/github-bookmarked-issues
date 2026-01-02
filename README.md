@@ -1,3 +1,39 @@
+## Features
+
+- **Bookmark button** on GitHub issue pages
+- **Popup** - Click extension icon to see bookmarks, copy as markdown, import from URLs
+- **Bookmarks View** - Custom view at `github.com/issues/bookmarked` (requires login)
+- **Settings** - Configure GitHub PAT for higher API rate limits
+
+## How it works
+
+### API Strategy
+
+| Context        | API     | Why                                                                          |
+|----------------|---------|------------------------------------------------------------------------------|
+| Bookmarks View | GraphQL | Runs in github.com context, uses session cookies, 2 requests for all issues |
+| Popup          | REST    | Extension context, GraphQL blocked by `Sec-Fetch-Site` header                |
+
+### GraphQL (Bookmarks View)
+
+The bookmarks view uses GitHub's internal GraphQL API via persisted queries:
+- `IssueDashboardKnownViewPageQuery` - fetches issue metadata in batch
+- `IssueRowSecondaryQuery` - fetches comment counts
+
+This provides fast loading (2 requests vs N) and no rate limits for logged-in users.
+Hash discovery in background.js auto-recovers when GitHub updates query hashes.
+
+### REST API + PAT (Popup)
+
+The popup uses GitHub's REST API via the background service worker:
+- Without PAT: 60 requests/hour
+- With PAT: 5,000 requests/hour
+
+Configure a fine-grained PAT in extension settings for higher rate limits.
+Issues are cached in `storage.local` to serve from cache when rate-limited.
+
+See [GITHUB_OPERATION.md](GITHUB_OPERATION.md) for detailed technical documentation.
+
 ## Development
 
 `npm run build`, then load code from:
@@ -52,33 +88,35 @@ URL: `about:debugging`
 In the extension devtools window, the `browser` (also as `chrome`) API is available.
 
 
-## Data
+## Data Storage
 
-Data is stored locally and synchronized when connected to a Firefox Account or Google Account.
+| Key                    | Storage        | Description                          |
+|------------------------|----------------|--------------------------------------|
+| `bookmarked_issues`    | `storage.sync` | Bookmarks (syncs across devices)     |
+| `github_pat`           | `storage.sync` | PAT token (syncs across devices)     |
+| `bookmarks_sort_order` | `storage.sync` | Sort preference                      |
+| `issue_cache`          | `storage.local`| Cached issue data (device-only, 5MB) |
+| `graphql_hashes`       | `storage.sync` | Discovered GraphQL hashes            |
 
+Query stored data (Firefox):
 ```
 $ sqlite3 ${PROFILE_DIR}/storage-sync-v2.sqlite "select data from storage_sync_data where ext_id = 'github-bookmarked-issues@extensions'" | jq
 ```
 
 ## Testing
 
-### Chrome
+```
+npm test
+```
+
+Runs Playwright tests against Chrome. Tests cover:
+- Extension loading
+- Popup UI and functionality
+- Options page (PAT configuration)
+- API request authentication
+- Bookmarks view (skipped - requires GitHub login)
+
+### References
 
 - [Playwright Chrome extensions](https://playwright.dev/docs/chrome-extensions)
-- Puppeteer Chrome extensions
-  - https://developer.chrome.com/docs/extensions/how-to/test/puppeteer
-  - https://developer.chrome.com/docs/extensions/how-to/test/end-to-end-testing
-
-### Firefox
-
-#### Playwright
-
-- https://github.com/microsoft/playwright/issues/7297
-  - [Build XPI and use policy to load it](https://github.com/microsoft/playwright/issues/7297#issuecomment-3333317209)
-  - Closed - Dec 3 2024: [Out of scope](https://github.com/microsoft/playwright/issues/7297#issuecomment-2515561760)
-- All closed for #7297
-  - https://github.com/microsoft/playwright/issues/26995
-  - https://github.com/microsoft/playwright/issues/36728
-  - https://github.com/microsoft/playwright/issues/15299
-  - https://github.com/microsoft/playwright/issues/37981
-- [Requested in Playwright Discord](https://discord.com/channels/807756831384403968/1295731963927334995)
+- Firefox extension testing not supported by Playwright ([#7297](https://github.com/microsoft/playwright/issues/7297))
