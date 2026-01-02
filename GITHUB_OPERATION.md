@@ -42,8 +42,31 @@ GitHub uses an internal GraphQL endpoint for its own UI:
 - URL: `https://github.com/_graphql`
 - Method: GET
 - Authentication: Session cookies (automatic via `credentials: 'same-origin'`)
-- No CORS issues (same origin as github.com)
 - No rate limits (uses user's session, not API quota)
+
+**Critical Restriction: Sec-Fetch-Site Header**
+
+GitHub validates the `Sec-Fetch-Site` request header and rejects requests that aren't `same-origin`:
+
+```json
+{
+  "errors": [{
+    "type": "INTERNAL",
+    "message": "Expected value for header `sec-fetch-site` is `same-origin`, but received `none`.",
+    "extensions": { "code": "invalidHeader" }
+  }]
+}
+```
+
+The browser sets this header automatically based on request context:
+
+| Context                      | Sec-Fetch-Site | Result     |
+|------------------------------|----------------|------------|
+| Content script (github.com)  | `same-origin`  | ✓ Works    |
+| Extension popup              | `none`         | ✗ Rejected |
+| Background service worker    | `none`         | ✗ Rejected |
+
+This means **only content scripts** running in the github.com context can use the internal GraphQL endpoint. Extension popups and background scripts cannot, even with `credentials: 'include'` and proper `host_permissions`.
 
 ### Request Format
 
@@ -223,13 +246,18 @@ Always validate that required fields are present in the response.
 - URL: `https://api.github.com/repos/{owner}/{repo}/issues/{number}`
 - Authentication: None (public repos) or PAT
 - Rate limit: 60 requests/hour (unauthenticated), 5000/hour (authenticated)
+- No batch endpoint: Each issue requires a separate request
 
-### CORS Restrictions
+### CORS and Extension Context
 
-Content scripts cannot directly call `api.github.com` due to CORS:
+**Content scripts** cannot directly call `api.github.com` due to CORS:
 - Browser blocks cross-origin requests from content scripts
 - Solution: Route requests through background service worker
-- Background scripts are not subject to CORS restrictions
+
+**Background scripts and popups** can call `api.github.com`:
+- Not subject to CORS restrictions (with `host_permissions`)
+- This is the only way for extension UI (popup) to fetch issue data
+- Subject to rate limits (60/hour unauthenticated)
 
 ### Response Format
 
@@ -308,13 +336,14 @@ GitHub session is maintained via cookies:
 
 ## Best Practices for Extensions
 
-1. Use GraphQL when possible (no rate limits for logged-in users)
-2. Fall back to REST API for reliability
-3. Route REST requests through background script (CORS)
+1. Use GraphQL from content scripts (no rate limits, batch queries)
+2. Use REST API from popup/background (only option due to Sec-Fetch-Site)
+3. Route REST requests through background script when called from content scripts (CORS)
 4. Validate GraphQL responses for required fields
 5. Use MutationObserver for React re-render resilience
-6. Cache query hashes but handle expiration gracefully
-7. Never assume field presence - use optional chaining
+6. Cache query hashes to storage.sync (survives service worker restarts)
+7. Handle hash expiration gracefully (discover new hashes from Link headers)
+8. Never assume field presence - use optional chaining
 
 ## Rate Limit Considerations
 
@@ -343,3 +372,25 @@ For users with 100+ bookmarks:
 - Pagination is essential to stay within limits
 - GraphQL (internal) is preferred - no rate limits for logged-in users
 - REST API requires careful batching (recommend 20 items per page)
+
+## Architectural Constraints Summary
+
+Due to the Sec-Fetch-Site restriction, extension components have different capabilities:
+
+| Component      | GraphQL (internal) | REST API       | Use Case                            |
+|----------------|--------------------| ---------------|-------------------------------------|
+| Content script | ✓ Yes              | Via background | Bookmarks view on github.com/issues |
+| Popup          | ✗ No               | ✓ Yes          | Toolbar popup (rate-limited)        |
+| Background     | ✗ No               | ✓ Yes          | API proxy for content scripts       |
+
+This creates an architectural asymmetry:
+- The bookmarks view (content script) can use efficient batch GraphQL queries
+- The popup must use REST API (60/hour unauthenticated, 5,000/hour with PAT)
+- No shared data-fetching code between them is practical
+
+Mitigation strategies for popup rate limits:
+- Request a GitHub PAT from user (5,000/hour vs 60/hour)
+- Cache fetched issue data in storage
+- Limit display count (e.g., 20 most recent)
+- Refresh on user action rather than every open
+- Accept stale data with manual refresh option
