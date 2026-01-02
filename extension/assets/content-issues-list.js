@@ -308,7 +308,12 @@ function createBookmarksViewTemplate() {
                     <div class="SearchBar-module__filter--uooUm d-flex flex-1 flex-column">
                       <div class="FormControl FormControl--fullWidth">
                         <label for="bookmarks-filter" class="FormControl-label sr-only">Filter bookmarked issues</label>
-                        <input type="text" id="bookmarks-filter" class="FormControl-input Input-module__Box_4--DZrl_" placeholder="Filter by issue title..." autocomplete="off">
+                        <div class="d-flex" style="border: 1px solid var(--borderColor-default, var(--color-border-default)); border-radius: 6px; overflow: hidden;">
+                          <input type="text" id="bookmarks-filter" class="FormControl-input Input-module__Box_4--DZrl_" placeholder="Filter by issue title..." autocomplete="off" style="flex: 1; min-width: 0; border: none;">
+                          <span class="d-flex flex-items-center px-2" style="background: var(--bgColor-muted, var(--color-canvas-subtle)); border-left: 1px solid var(--borderColor-default, var(--color-border-default)); color: var(--fgColor-muted, var(--color-fg-muted));">
+                            <svg aria-hidden="true" focusable="false" class="octicon octicon-search" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" style="vertical-align: text-bottom;"><path d="M10.68 11.74a6 6 0 0 1-7.922-8.982 6 6 0 0 1 8.982 7.922l3.04 3.04a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215ZM11.5 7a4.499 4.499 0 1 0-8.997 0A4.499 4.499 0 0 0 11.5 7Z"></path></svg>
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
