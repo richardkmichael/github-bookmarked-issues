@@ -5,12 +5,42 @@ if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
 
 // Background service worker for managing bookmarked issues storage
 
-// Storage key for bookmarked issues
+// Storage keys
 const STORAGE_KEY = 'bookmarked_issues';
+const HASHES_KEY = 'discovered_hashes';
 
-// Cache for discovered GraphQL query hashes (keyed by query name)
-// Used as fallback when hardcoded hashes expire
+// Runtime cache for discovered GraphQL query hashes (keyed by query name)
+// Persisted to storage.sync so they survive service worker restarts
 const discoveredHashes = new Map();
+
+// Load persisted hashes on startup
+async function loadPersistedHashes() {
+  try {
+    const result = await browser.storage.sync.get(HASHES_KEY);
+    const persisted = result[HASHES_KEY] || {};
+    for (const [name, hash] of Object.entries(persisted)) {
+      discoveredHashes.set(name, hash);
+    }
+    if (Object.keys(persisted).length > 0) {
+      console.log('[Background] Loaded persisted hashes:', Object.keys(persisted));
+    }
+  } catch (e) {
+    console.error('[Background] Error loading persisted hashes:', e);
+  }
+}
+
+// Persist hashes to storage
+async function persistHashes() {
+  try {
+    const obj = Object.fromEntries(discoveredHashes);
+    await browser.storage.sync.set({ [HASHES_KEY]: obj });
+  } catch (e) {
+    console.error('[Background] Error persisting hashes:', e);
+  }
+}
+
+// Load hashes immediately
+loadPersistedHashes();
 
 // Listen for responses from GitHub to capture GraphQL query hashes from Link headers
 browser.webRequest.onHeadersReceived.addListener(
@@ -23,18 +53,28 @@ browser.webRequest.onHeadersReceived.addListener(
     if (!linkHeader || !linkHeader.value.includes('_graphql')) return;
 
     // Extract all query hashes from Link header (may contain multiple preloads)
+    let hashesUpdated = false;
     const matches = linkHeader.value.matchAll(/body=([^&>\s]+)/g);
     for (const match of matches) {
       try {
         const decoded = decodeURIComponent(match[1]);
         const parsed = JSON.parse(decoded);
         if (parsed.persistedQueryName && parsed.query) {
-          discoveredHashes.set(parsed.persistedQueryName, parsed.query);
-          console.log('[Background] Discovered hash for', parsed.persistedQueryName, ':', parsed.query);
+          const existing = discoveredHashes.get(parsed.persistedQueryName);
+          if (existing !== parsed.query) {
+            discoveredHashes.set(parsed.persistedQueryName, parsed.query);
+            console.log('[Background] Discovered hash for', parsed.persistedQueryName, ':', parsed.query);
+            hashesUpdated = true;
+          }
         }
       } catch (e) {
         // Skip malformed entries
       }
+    }
+
+    // Persist if any hashes were updated
+    if (hashesUpdated) {
+      persistHashes();
     }
   },
   { urls: ['https://github.com/*'] },
@@ -179,6 +219,7 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
       });
     return true;
   }
+
 });
 
 // Log when service worker starts
