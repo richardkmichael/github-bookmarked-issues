@@ -218,7 +218,8 @@ if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
 
   // Setup observer to handle SPA navigation by watching DOM changes
   function setupNavigationObserver() {
-    // Watch for DOM changes in the main content area
+    // Watch for DOM changes - observe body to catch all navigation
+    // (observing <main> fails when <main> itself is replaced during navigation)
     const observer = new MutationObserver(() => {
       const newUrl = location.href;
       if (newUrl !== currentUrl) {
@@ -238,17 +239,12 @@ if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
       }
     });
 
-    // Observe the main element for changes
-    const main = document.querySelector('main');
-    if (main) {
-      observer.observe(main, {
-        childList: true,
-        subtree: true
-      });
-      console.log('[GitHub Bookmarked Issues] Navigation observer started');
-    } else {
-      console.log('[GitHub Bookmarked Issues] Could not find main element for observer');
-    }
+    // Observe body to catch navigation even when <main> is replaced
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+    console.log('[GitHub Bookmarked Issues] Navigation observer started on body');
 
     // Also handle popstate (back/forward buttons)
     window.addEventListener('popstate', () => {
