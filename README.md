@@ -120,3 +120,23 @@ Runs Playwright tests against Chrome. Tests cover:
 
 - [Playwright Chrome extensions](https://playwright.dev/docs/chrome-extensions)
 - Firefox extension testing not supported by Playwright ([#7297](https://github.com/microsoft/playwright/issues/7297))
+
+## Privacy & Security
+
+- No external servers - all data stays in browser storage
+- No tracking or analytics
+- Bookmark data syncs via browser account (Chrome/Firefox sync)
+- Optional GitHub PAT stored in `storage.sync` if configured
+- Issue cache stored in `storage.local` (device-only, not synced)
+- GitHub API requests fetch issue metadata only
+- Open source - inspect the code yourself
+
+## Browser Compatibility
+
+| Browser         | Status | Notes                                    |
+|-----------------|--------|------------------------------------------|
+| Chrome          | 123+   | Tested                                   |
+| Edge            | 123+   | Chromium-based, should work              |
+| Firefox Desktop | 128+   | Tested                                   |
+| Firefox Android | -      | No `storage.sync` support                |
+| Safari          | -      | Not yet investigated                     |
