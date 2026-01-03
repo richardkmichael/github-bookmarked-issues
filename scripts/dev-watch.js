@@ -34,7 +34,6 @@ const watcher = chokidar.watch('extension', {
     /\.xpi$/,
     /\.zip$/,
     /\.tmp$/,
-    /\.DS_Store$/,
     /node_modules/
   ],
   ignoreInitial: true,
