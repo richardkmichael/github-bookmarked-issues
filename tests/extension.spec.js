@@ -64,7 +64,9 @@ test.describe('GitHub Bookmarked Issues Extension', () => {
     }
     extensionId = background.url().split('/')[2];
 
-    page = await context.newPage();
+    // Use the existing blank page instead of creating a new one
+    const pages = context.pages();
+    page = pages[0] || await context.newPage();
   });
 
   test.afterAll(async () => {
@@ -79,6 +81,63 @@ test.describe('GitHub Bookmarked Issues Extension', () => {
     test('loads successfully', async () => {
       expect(extensionId).toBeTruthy();
       console.log('Extension ID:', extensionId);
+    });
+  });
+
+  // Bookmark button navigation tests - ensure button appears regardless of navigation path
+  test.describe('Bookmark Button Navigation', { tag: '@navigation' }, () => {
+    const bookmarkSelector = '[data-extension-bookmark]';
+    // Selector for GitHub's header actions (where bookmark button is inserted)
+    const headerActionsSelector = '[data-component="PH_Actions"]';
+
+    test('appears on direct navigation to issue page', async () => {
+      await page.goto('https://github.com/microsoft/playwright/issues/38673');
+      await page.waitForLoadState('domcontentloaded');
+
+      // Wait for header actions container (needed for button insertion)
+      await expect(page.locator(headerActionsSelector)).toBeVisible({ timeout: 15000 });
+
+      const bookmarkButton = page.locator(bookmarkSelector);
+      await expect(bookmarkButton).toBeVisible({ timeout: 10000 });
+    });
+
+    test('appears after SPA navigation from issues list', async () => {
+      // Navigate to issues list
+      await page.goto('https://github.com/microsoft/playwright/issues');
+      await page.waitForLoadState('domcontentloaded');
+
+      // Click on first issue link (SPA navigation)
+      const issueLink = page.locator('a[href^="/microsoft/playwright/issues/"]:not([href$="/issues/"])').first();
+      await expect(issueLink).toBeVisible({ timeout: 10000 });
+      await issueLink.click();
+
+      // Wait for issue page to load
+      await expect(page.locator(headerActionsSelector)).toBeVisible({ timeout: 15000 });
+
+      const bookmarkButton = page.locator(bookmarkSelector);
+      await expect(bookmarkButton).toBeVisible({ timeout: 10000 });
+    });
+
+    test('appears after SPA navigation from repo page', async () => {
+      // Start at repo page
+      await page.goto('https://github.com/microsoft/playwright');
+      await page.waitForLoadState('domcontentloaded');
+
+      // Click Issues tab (SPA navigation)
+      const issuesTab = page.locator('#issues-tab');
+      await expect(issuesTab).toBeVisible({ timeout: 10000 });
+      await issuesTab.click();
+
+      // Wait for issues list, then click first issue
+      const issueLink = page.locator('a[href^="/microsoft/playwright/issues/"]:not([href$="/issues/"])').first();
+      await expect(issueLink).toBeVisible({ timeout: 15000 });
+      await issueLink.click();
+
+      // Wait for issue page to load
+      await expect(page.locator(headerActionsSelector)).toBeVisible({ timeout: 15000 });
+
+      const bookmarkButton = page.locator(bookmarkSelector);
+      await expect(bookmarkButton).toBeVisible({ timeout: 10000 });
     });
   });
 
