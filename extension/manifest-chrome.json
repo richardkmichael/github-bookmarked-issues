@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "description": "Track your bookmarked GitHub issues across all repositories with cross-device sync",
   "manifest_version": 3,
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA5hoPyLiaL270ncRXJdvWf8QjbNEV4TfsjYTO7Y11PAYJeshGzlYWTNtkcn7JUAZJQFKFjicmF9O8IUpyCaPo9nxdAmhk8EsZnoh47ueo0wyUAhFEGRNlYOPEIMmSeRVDbABIlMOReDJLAfVYMYOOX2Q14E8w0/TrypEthPKYSMunVEo60rTXCF+bFx+MWeBBimB1bSYSnCRNch2iU1Iug/yrlqhbqwWrSTDqQWllf4jhJdLDmX/eVCcoFiz+ejTfcEKElXmMWJJnLNDU6jPntLJJZ8gtbJMGhO3CUAkLPLX4DcHzgtq4VX/V9lz9CcmlskdW9SfFTSir917PGfHIVwIDAQAB",
   "minimum_chrome_version": "123",
   "browser_specific_settings": {
     "gecko": {
