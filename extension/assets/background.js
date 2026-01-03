@@ -155,6 +155,13 @@ async function removeBookmark(issueId) {
   return { success: true, totalBookmarks: Object.keys(bookmarks).length };
 }
 
+// Clear all bookmarks
+async function clearAllBookmarks() {
+  await browser.storage.sync.set({ [STORAGE_KEY]: {} });
+  console.log('[Background] Cleared all bookmarks');
+  return { success: true };
+}
+
 // Listen for messages from content script and popup
 browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
   console.log('[Background] Received message:', message.type);
@@ -174,6 +181,16 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
       .then(sendResponse)
       .catch(error => {
         console.error('[Background] Error removing bookmark:', error);
+        sendResponse({ success: false, error: error.message });
+      });
+    return true;
+  }
+
+  if (message.type === 'CLEAR_ALL_BOOKMARKS') {
+    clearAllBookmarks()
+      .then(sendResponse)
+      .catch(error => {
+        console.error('[Background] Error clearing bookmarks:', error);
         sendResponse({ success: false, error: error.message });
       });
     return true;

@@ -65,11 +65,13 @@ async function displayIssues(bookmarks) {
 
   const bookmarkIds = Object.keys(bookmarks);
   const copyAllBtn = document.getElementById('copy-all-btn');
+  const clearAllBtn = document.getElementById('clear-all-btn');
 
   if (bookmarkIds.length === 0) {
     loading.style.display = 'none';
     emptyState.style.display = 'block';
     copyAllBtn.disabled = true;
+    clearAllBtn.disabled = true;
     return;
   }
 
@@ -99,6 +101,7 @@ async function displayIssues(bookmarks) {
   if (validIssues.length === 0 && rateLimitedCount === 0) {
     emptyState.style.display = 'block';
     copyAllBtn.disabled = true;
+    clearAllBtn.disabled = true;
     return;
   }
 
@@ -106,6 +109,7 @@ async function displayIssues(bookmarks) {
     // All issues rate limited with no cache - show error
     showRateLimitError(rateLimitedCount);
     copyAllBtn.disabled = true;
+    clearAllBtn.disabled = true;
     return;
   }
 
@@ -176,6 +180,7 @@ async function displayIssues(bookmarks) {
         if (container.children.length === 0) {
           emptyState.style.display = 'block';
           copyAllBtn.disabled = true;
+          clearAllBtn.disabled = true;
         }
       } catch (error) {
         console.error('[Popup] Error removing bookmark:', error);
@@ -188,6 +193,9 @@ async function displayIssues(bookmarks) {
   // Wire up copy-all button
   copyAllBtn.disabled = false;
   copyAllBtn.onclick = () => copyAllToClipboard(validIssues);
+
+  // Enable clear-all button
+  clearAllBtn.disabled = false;
 }
 
 
@@ -280,6 +288,7 @@ function showRateLimitError(count) {
 
 // Store validated import data between paste and import
 let pendingImport = null;
+
 
 // Parse list items and extract GitHub issue URLs
 // Returns { valid: [...bookmarkIds], invalid: number }
@@ -434,6 +443,24 @@ function hideImportSection() {
   document.getElementById('issues-container').style.display = 'block';
 }
 
+// Wire up clear-all button
+function setupClearAllUI() {
+  const clearAllBtn = document.getElementById('clear-all-btn');
+
+  clearAllBtn.addEventListener('click', async () => {
+    await browser.runtime.sendMessage({ type: 'CLEAR_ALL_BOOKMARKS' });
+
+    // Clear the list and show empty state
+    document.getElementById('issues-container').replaceChildren();
+    document.getElementById('empty-state').style.display = 'block';
+    document.getElementById('copy-all-btn').disabled = true;
+    clearAllBtn.disabled = true;
+
+    // Update storage info
+    await displayStorageInfo();
+  });
+}
+
 // Wire up import UI
 function setupImportUI() {
   const importBtn = document.getElementById('import-btn');
@@ -513,6 +540,9 @@ function setupImportUI() {
 // Initialize popup
 async function init() {
   try {
+    // Wire up clear-all UI
+    setupClearAllUI();
+
     // Wire up import UI
     setupImportUI();
 
