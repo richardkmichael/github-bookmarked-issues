@@ -432,7 +432,9 @@ function showImportSection() {
   document.getElementById('loading').style.display = 'none';
   document.getElementById('import-textarea').value = '';
   document.getElementById('import-validation').style.display = 'none';
-  document.getElementById('import-submit-btn').disabled = true;
+  const submitBtn = document.getElementById('import-submit-btn');
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Import';
   pendingImport = null;
   document.getElementById('import-textarea').focus();
 }

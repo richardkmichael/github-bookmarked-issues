@@ -270,8 +270,14 @@
       color: white;
     }
 
-    .import-actions .btn-primary:hover {
+    .import-actions .btn-primary:hover:not(:disabled) {
       background: #2c974b;
+    }
+
+    .import-actions .btn-primary:disabled {
+      background: #94d3a2;
+      border-color: #94d3a2;
+      cursor: not-allowed;
     }
 
     .import-validation {
