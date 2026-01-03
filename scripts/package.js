@@ -16,7 +16,11 @@ if (!browser || !['chrome', 'firefox'].includes(browser)) {
 
 async function packageExtension() {
   const buildDir = path.join(ROOT, 'build', browser);
+  const bundleDir = path.join(ROOT, 'build', 'bundle');
   const manifestPath = path.join(buildDir, 'manifest.json');
+
+  // Create bundle directory
+  await fs.mkdir(bundleDir, { recursive: true });
 
   // Read version from manifest
   const manifestContent = await fs.readFile(manifestPath, 'utf8');
@@ -28,24 +32,26 @@ async function packageExtension() {
   if (browser === 'chrome') {
     // Create ZIP for Chrome
     const zipFile = `${packageName}.zip`;
+    const zipPath = path.join(bundleDir, zipFile);
     console.log(`Creating Chrome package: ${zipFile}...`);
 
-    execSync(`zip -r "${zipFile}" . -x "*.zip"`, {
+    execSync(`zip -r "${zipPath}" . -x "*.zip"`, {
       cwd: buildDir,
       stdio: 'inherit'
     });
 
-    console.log(`✓ Chrome package created at build/chrome/${zipFile}`);
+    console.log(`✓ Chrome package created at build/bundle/${zipFile}`);
   } else {
     // Use web-ext for Firefox
-    console.log(`Creating Firefox package: ${packageName}.xpi...`);
+    const xpiFile = `${packageName}.xpi`;
+    console.log(`Creating Firefox package: ${xpiFile}...`);
 
-    execSync(`web-ext build --source-dir=. --artifacts-dir=. --filename="${packageName}.xpi" --overwrite-dest`, {
+    execSync(`web-ext build --source-dir=. --artifacts-dir="${bundleDir}" --filename="${xpiFile}" --overwrite-dest`, {
       cwd: buildDir,
       stdio: 'inherit'
     });
 
-    console.log(`✓ Firefox package created at build/firefox/${packageName}.xpi`);
+    console.log(`✓ Firefox package created at build/bundle/${xpiFile}`);
   }
 }
 
