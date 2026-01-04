@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-color-mode="auto" data-light-theme="light" data-dark-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,286 +13,68 @@
       min-width: 400px;
       max-width: 600px;
       margin: 0 auto;
-      padding: 24px;
-      font-family: -apple-system, "system-ui", "Segoe UI", sans-serif;
     }
 
-    .header {
-      margin-bottom: 24px;
-      padding-bottom: 16px;
-      border-bottom: 1px solid #d0d7de;
-    }
-
-    .header h1 {
-      font-size: 20px;
-      font-weight: 600;
-      margin: 0 0 4px 0;
-    }
-
-    .header p {
-      font-size: 14px;
-      color: #57606a;
-      margin: 0;
-    }
-
-    .section {
-      margin-bottom: 24px;
-    }
-
-    .section-header {
-      font-size: 14px;
-      font-weight: 600;
-      margin-bottom: 8px;
-    }
-
-    .section-description {
-      font-size: 12px;
-      color: #57606a;
-      margin-bottom: 12px;
-    }
-
-    .form-group {
-      margin-bottom: 16px;
-    }
-
-    .form-label {
-      display: block;
-      font-size: 14px;
-      font-weight: 500;
-      margin-bottom: 6px;
-    }
-
-    .input-wrapper {
-      position: relative;
-      display: flex;
-    }
-
-    .form-input {
-      width: 100%;
-      padding: 8px 40px 8px 12px;
-      font-size: 14px;
-      border: 1px solid #d0d7de;
-      border-radius: 6px;
-      box-sizing: border-box;
-    }
-
-    .form-input:focus {
-      outline: none;
-      border-color: #0969da;
-      box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.3);
-    }
-
-    .btn-icon {
+    .btn-toggle-password {
       position: absolute;
       right: 8px;
       top: 50%;
       transform: translateY(-50%);
-      background: transparent;
-      border: none;
-      padding: 4px;
-      cursor: pointer;
-      color: #57606a;
-      border-radius: 4px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
     }
 
-    .btn-icon:hover {
-      background: #f6f8fa;
-      color: #24292f;
-    }
-
-    .btn-icon .icon-eye-closed {
+    .btn-toggle-password .icon-eye-closed {
       display: none;
     }
 
-    .btn-icon[aria-pressed="true"] .icon-eye {
+    .btn-toggle-password[aria-pressed="true"] .icon-eye {
       display: none;
     }
 
-    .btn-icon[aria-pressed="true"] .icon-eye-closed {
+    .btn-toggle-password[aria-pressed="true"] .icon-eye-closed {
       display: block;
-    }
-
-    .form-hint {
-      font-size: 12px;
-      color: #57606a;
-      margin-top: 4px;
-    }
-
-    .form-actions {
-      display: flex;
-      gap: 8px;
-      margin-top: 16px;
-    }
-
-    .btn {
-      padding: 6px 16px;
-      font-size: 14px;
-      font-weight: 500;
-      border-radius: 6px;
-      cursor: pointer;
-      border: 1px solid #d0d7de;
-      background: #f6f8fa;
-      color: #24292f;
-    }
-
-    .btn:hover:not(:disabled) {
-      background: #f3f4f6;
-      border-color: #8c959f;
-    }
-
-    .btn:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    .btn-primary {
-      background: #2da44e;
-      border-color: #2da44e;
-      color: white;
-    }
-
-    .btn-primary:hover:not(:disabled) {
-      background: #2c974b;
-    }
-
-    .btn-danger {
-      color: #cf222e;
-      border-color: #cf222e;
-    }
-
-    .btn-danger:hover:not(:disabled) {
-      color: #ffffff;
-      background: #cf222e;
-    }
-
-    .status-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 4px 12px;
-      border-radius: 16px;
-      font-size: 12px;
-      font-weight: 500;
-    }
-
-    .status-badge--success {
-      background: #dafbe1;
-      color: #1a7f37;
-    }
-
-    .status-badge--warning {
-      background: #fff8c5;
-      color: #9a6700;
-    }
-
-    .status-badge svg {
-      width: 12px;
-      height: 12px;
-    }
-
-    .message {
-      padding: 12px;
-      border-radius: 6px;
-      font-size: 14px;
-      margin-top: 12px;
-    }
-
-    .message--success {
-      background: #dafbe1;
-      border: 1px solid #4ac26b;
-      color: #1a7f37;
-    }
-
-    .message--error {
-      background: #ffebe9;
-      border: 1px solid #ff8182;
-      color: #cf222e;
-    }
-
-    .link-external {
-      color: #0969da;
-      text-decoration: none;
-    }
-
-    .link-external:hover {
-      text-decoration: underline;
-    }
-
-    .info-box {
-      background: #f6f8fa;
-      border: 1px solid #d0d7de;
-      border-radius: 6px;
-      padding: 12px;
-      font-size: 13px;
-      margin-top: 16px;
-    }
-
-    .info-box h4 {
-      font-size: 13px;
-      font-weight: 600;
-      margin: 0 0 8px 0;
-    }
-
-    .info-box ul {
-      margin: 0;
-      padding-left: 20px;
-    }
-
-    .info-box li {
-      margin-bottom: 4px;
-    }
-
-    .info-box code {
-      background: #eff2f5;
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-size: 12px;
     }
   </style>
 </head>
-<body>
-  <div class="header">
-    <h1>Settings</h1>
-    <p>Configure your GitHub Bookmarked Issues extension</p>
+<body class="p-4">
+  <div class="pb-3 mb-4 border-bottom">
+    <h1 class="f3 text-bold mb-1">Settings</h1>
+    <p class="f5 color-fg-muted mb-0">Configure your GitHub Bookmarked Issues extension</p>
   </div>
 
-  <div class="section">
-    <div class="section-header">GitHub Personal Access Token</div>
-    <div class="section-description">
+  <div class="mb-4">
+    <div class="f4 text-bold mb-2">GitHub Personal Access Token</div>
+    <div class="f6 color-fg-muted mb-3">
       A PAT increases API rate limits from 60 to 5,000 requests per hour.
       <a href="https://github.com/settings/personal-access-tokens/new?name=GitHub%20Bookmarked%20Issues&description=Read-only%20access%20to%20issues%20for%20the%20GitHub%20Bookmarked%20Issues%20browser%20extension&repository_access=public&issues=read"
          target="_blank"
          rel="noopener noreferrer"
-         class="link-external">Create a new token</a>
+         class="Link--external">Create a new token</a>
     </div>
 
-    <div id="status-container" style="margin-bottom: 12px;">
-      <span id="status-configured" class="status-badge status-badge--success" style="display: none;">
-        <svg viewBox="0 0 16 16" fill="currentColor">
+    <div id="status-container" class="mb-3">
+      <span id="status-configured" class="Label Label--success d-none">
+        <svg class="octicon" viewBox="0 0 16 16" width="12" height="12" fill="currentColor">
           <path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"></path>
         </svg>
         Token configured
       </span>
-      <span id="status-not-configured" class="status-badge status-badge--warning">
-        <svg viewBox="0 0 16 16" fill="currentColor">
+      <span id="status-not-configured" class="Label Label--attention">
+        <svg class="octicon" viewBox="0 0 16 16" width="12" height="12" fill="currentColor">
           <path d="M6.457 1.047c.659-1.234 2.427-1.234 3.086 0l6.082 11.378A1.75 1.75 0 0 1 14.082 15H1.918a1.75 1.75 0 0 1-1.543-2.575Zm1.763.707a.25.25 0 0 0-.44 0L1.698 13.132a.25.25 0 0 0 .22.368h12.164a.25.25 0 0 0 .22-.368Zm.53 3.996v2.5a.75.75 0 0 1-1.5 0v-2.5a.75.75 0 0 1 1.5 0ZM9 11a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"></path>
         </svg>
         No token configured
       </span>
     </div>
 
-    <div class="form-group">
-      <label for="pat-input" class="form-label">Fine-grained Personal Access Token</label>
-      <div class="input-wrapper">
+    <div class="mb-3">
+      <label for="pat-input" class="d-block f5 text-bold mb-1">Fine-grained Personal Access Token</label>
+      <div class="position-relative d-flex">
         <input type="password"
                id="pat-input"
-               class="form-input"
+               class="form-control input-contrast width-full pr-6"
                placeholder="github_pat_xxxxxxxxxxxxxxxxxxxx"
                autocomplete="off">
-        <button id="toggle-visibility-btn" class="btn-icon" type="button" title="Show" aria-pressed="false">
+        <button id="toggle-visibility-btn" class="btn-octicon btn-toggle-password" type="button" title="Show" aria-pressed="false">
           <svg class="icon-eye" viewBox="0 0 16 16" width="16" height="16" fill="currentColor">
             <path d="M8 2c1.981 0 3.671.992 4.933 2.078 1.27 1.091 2.187 2.345 2.637 3.023a1.62 1.62 0 0 1 0 1.798c-.45.678-1.367 1.932-2.637 3.023C11.67 13.008 9.981 14 8 14c-1.981 0-3.671-.992-4.933-2.078C1.797 10.831.88 9.577.43 8.899a1.62 1.62 0 0 1 0-1.798c.45-.678 1.367-1.932 2.637-3.023C4.33 2.992 6.019 2 8 2ZM1.679 7.932a.12.12 0 0 0 0 .136c.411.622 1.241 1.75 2.366 2.717C5.176 11.758 6.527 12.5 8 12.5c1.473 0 2.825-.742 3.955-1.715 1.124-.967 1.954-2.096 2.366-2.717a.12.12 0 0 0 0-.136c-.412-.621-1.242-1.75-2.366-2.717C10.824 4.242 9.473 3.5 8 3.5c-1.473 0-2.825.742-3.955 1.715-1.124.967-1.954 2.096-2.366 2.717ZM8 10a2 2 0 1 1-.001-3.999A2 2 0 0 1 8 10Z"></path>
           </svg>
@@ -301,36 +83,36 @@
           </svg>
         </button>
       </div>
-      <div class="form-hint">
+      <div class="note mt-1">
         Token is stored in your browser's encrypted sync storage and syncs across your devices.
       </div>
     </div>
 
-    <div class="form-actions">
-      <button id="save-btn" class="btn btn-primary" type="button">Save</button>
-      <button id="test-btn" class="btn" type="button">Test</button>
-      <button id="clear-btn" class="btn btn-danger" type="button" style="display: none;">Clear</button>
+    <div class="d-flex mt-3">
+      <button id="save-btn" class="btn btn-primary mr-2" type="button">Save</button>
+      <button id="test-btn" class="btn mr-2" type="button">Test</button>
+      <button id="clear-btn" class="btn btn-danger d-none" type="button">Clear</button>
     </div>
 
-    <div id="message" class="message" style="display: none;"></div>
+    <div id="message" class="flash mt-3 d-none"></div>
 
-    <div class="info-box">
-      <h4>Required permission:</h4>
-      <ul>
+    <div class="Box p-3 f6 mt-4">
+      <h4 class="text-bold mb-2">Required permission:</h4>
+      <ul class="mb-2">
         <li><code>Issues: Read-only</code> - This extension only reads issue metadata</li>
       </ul>
-      <p style="margin: 8px 0 0 0; font-size: 12px; color: #57606a;">
+      <p class="mb-0 color-fg-muted">
         For private repos, also grant <code>Metadata: Read-only</code> on those repositories.
       </p>
     </div>
 
-    <div class="info-box" style="margin-top: 12px;">
-      <h4>Security:</h4>
-      <ul>
-        <li>Your token is only sent to <code>api.github.com</code></li>
-        <li>Token is stored locally in your browser's encrypted storage</li>
-        <li>This extension does not collect or transmit your token anywhere else</li>
-        <li>You can <a href="https://github.com/richardkmichael/github-bookmarked-issues" target="_blank" rel="noopener noreferrer" class="link-external">review the source code</a> on GitHub</li>
+    <div class="Box p-3 f6 mt-3">
+      <h4 class="text-bold mb-2">Security:</h4>
+      <ul class="mb-0 pl-3">
+        <li class="mb-1">Your token is only sent to <code>api.github.com</code></li>
+        <li class="mb-1">Token is stored locally in your browser's encrypted storage</li>
+        <li class="mb-1">This extension does not collect or transmit your token anywhere else</li>
+        <li>You can <a href="https://github.com/richardkmichael/github-bookmarked-issues" target="_blank" rel="noopener noreferrer" class="Link--primary">review the source code</a> on GitHub</li>
       </ul>
     </div>
   </div>

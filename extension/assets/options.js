@@ -18,26 +18,26 @@ const statusNotConfigured = document.getElementById('status-not-configured');
 // Show message to user
 function showMessage(text, type) {
   messageEl.textContent = text;
-  messageEl.className = `message message--${type}`;
-  messageEl.style.display = 'block';
+  messageEl.className = `flash flash-${type === 'success' ? 'success' : 'error'} mt-3`;
+  messageEl.classList.remove('d-none');
 
   // Auto-hide after 5 seconds
   setTimeout(() => {
-    messageEl.style.display = 'none';
+    messageEl.classList.add('d-none');
   }, 5000);
 }
 
 // Update UI based on whether token is configured
 function updateStatus(hasToken) {
   if (hasToken) {
-    statusConfigured.style.display = 'inline-flex';
-    statusNotConfigured.style.display = 'none';
-    clearBtn.style.display = 'inline-block';
+    statusConfigured.classList.remove('d-none');
+    statusNotConfigured.classList.add('d-none');
+    clearBtn.classList.remove('d-none');
     patInput.placeholder = '••••••••••••••••••••••••••••••••••••••••';
   } else {
-    statusConfigured.style.display = 'none';
-    statusNotConfigured.style.display = 'inline-flex';
-    clearBtn.style.display = 'none';
+    statusConfigured.classList.add('d-none');
+    statusNotConfigured.classList.remove('d-none');
+    clearBtn.classList.add('d-none');
     patInput.placeholder = 'github_pat_xxxxxxxxxxxxxxxxxxxx';
   }
 }

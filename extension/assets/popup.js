@@ -68,8 +68,8 @@ async function displayIssues(bookmarks) {
   const clearAllBtn = document.getElementById('clear-all-btn');
 
   if (bookmarkIds.length === 0) {
-    loading.style.display = 'none';
-    emptyState.style.display = 'block';
+    loading.classList.add('d-none');
+    emptyState.classList.remove('d-none');
     copyAllBtn.disabled = true;
     clearAllBtn.disabled = true;
     return;
@@ -91,7 +91,7 @@ async function displayIssues(bookmarks) {
   const rateLimitedCount = issues.filter(issue => issue && issue._rateLimited).length;
   const validIssues = issues.filter(issue => issue !== null && !issue._rateLimited);
 
-  loading.style.display = 'none';
+  loading.classList.add('d-none');
 
   // Show rate limit warning if any issues couldn't be fetched
   if (rateLimitedCount > 0) {
@@ -99,7 +99,7 @@ async function displayIssues(bookmarks) {
   }
 
   if (validIssues.length === 0 && rateLimitedCount === 0) {
-    emptyState.style.display = 'block';
+    emptyState.classList.remove('d-none');
     copyAllBtn.disabled = true;
     clearAllBtn.disabled = true;
     return;
@@ -178,7 +178,7 @@ async function displayIssues(bookmarks) {
 
         // Check if list is now empty
         if (container.children.length === 0) {
-          emptyState.style.display = 'block';
+          emptyState.classList.remove('d-none');
           copyAllBtn.disabled = true;
           clearAllBtn.disabled = true;
         }
@@ -239,9 +239,9 @@ function showError(message) {
   const error = document.getElementById('error');
   error.className = 'error-message';
   error.textContent = message;
-  error.style.display = 'block';
+  error.classList.remove('d-none');
 
-  document.getElementById('loading').style.display = 'none';
+  document.getElementById('loading').classList.add('d-none');
 }
 
 // Show rate limit warning (some issues loaded from cache, some couldn't be fetched)
@@ -256,7 +256,7 @@ function showRateLimitWarning(rateLimitedCount, cachedCount) {
     message.textContent = `${rateLimitedCount} issue(s) couldn't be loaded due to API rate limit.`;
   }
 
-  warning.style.display = 'block';
+  warning.classList.remove('d-none');
 }
 
 // Show rate limit error (no issues could be loaded)
@@ -282,8 +282,8 @@ function showRateLimitError(count) {
   });
   error.appendChild(settingsBtn);
 
-  error.style.display = 'block';
-  document.getElementById('loading').style.display = 'none';
+  error.classList.remove('d-none');
+  document.getElementById('loading').classList.add('d-none');
 }
 
 // Store validated import data between paste and import
@@ -366,7 +366,7 @@ function updateValidationDisplay(validation) {
 
   // Only show if there's something to display
   if (validation.valid.length === 0 && validation.invalid === 0 && validation.duplicates === 0) {
-    container.style.display = 'none';
+    container.classList.add('d-none');
     submitBtn.disabled = true;
     return;
   }
@@ -398,7 +398,7 @@ function updateValidationDisplay(validation) {
     container.appendChild(item);
   }
 
-  container.style.display = 'flex';
+  container.classList.remove('d-none');
   submitBtn.disabled = validation.valid.length === 0;
 }
 
@@ -426,12 +426,12 @@ async function importValidatedBookmarks() {
 
 // Show import section, hide issue list
 function showImportSection() {
-  document.getElementById('import-section').style.display = 'block';
-  document.getElementById('issues-container').style.display = 'none';
-  document.getElementById('empty-state').style.display = 'none';
-  document.getElementById('loading').style.display = 'none';
+  document.getElementById('import-section').classList.remove('d-none');
+  document.getElementById('issues-container').classList.add('d-none');
+  document.getElementById('empty-state').classList.add('d-none');
+  document.getElementById('loading').classList.add('d-none');
   document.getElementById('import-textarea').value = '';
-  document.getElementById('import-validation').style.display = 'none';
+  document.getElementById('import-validation').classList.add('d-none');
   const submitBtn = document.getElementById('import-submit-btn');
   submitBtn.disabled = true;
   submitBtn.textContent = 'Import';
@@ -441,8 +441,8 @@ function showImportSection() {
 
 // Hide import section, show issue list
 function hideImportSection() {
-  document.getElementById('import-section').style.display = 'none';
-  document.getElementById('issues-container').style.display = 'block';
+  document.getElementById('import-section').classList.add('d-none');
+  document.getElementById('issues-container').classList.remove('d-none');
 }
 
 // Wire up clear-all button
@@ -454,7 +454,7 @@ function setupClearAllUI() {
 
     // Clear the list and show empty state
     document.getElementById('issues-container').replaceChildren();
-    document.getElementById('empty-state').style.display = 'block';
+    document.getElementById('empty-state').classList.remove('d-none');
     document.getElementById('copy-all-btn').disabled = true;
     clearAllBtn.disabled = true;
 
@@ -503,7 +503,7 @@ function setupImportUI() {
 
   importCancelBtn.addEventListener('click', async () => {
     hideImportSection();
-    document.getElementById('loading').style.display = 'flex';
+    document.getElementById('loading').classList.remove('d-none');
     const response = await browser.runtime.sendMessage({ type: 'GET_BOOKMARKS' });
     await displayIssues(response.bookmarks);
   });
@@ -525,7 +525,7 @@ function setupImportUI() {
         // Brief delay to show success, then refresh
         setTimeout(async () => {
           hideImportSection();
-          document.getElementById('loading').style.display = 'flex';
+          document.getElementById('loading').classList.remove('d-none');
           await displayStorageInfo();
           const response = await browser.runtime.sendMessage({ type: 'GET_BOOKMARKS' });
           await displayIssues(response.bookmarks);
