@@ -14,7 +14,11 @@ export default defineConfig({
   },
   expect: {
     toHaveScreenshot: {
-      maxDiffPixelRatio: 0.02,
+      // Balanced threshold: catch CSS issues while allowing rendering variance
+      // 0.5% catches missing button gaps (~8px) but tolerates font anti-aliasing
+      maxDiffPixelRatio: 0.005,
+      // Per-pixel threshold: allow slight color variance from anti-aliasing
+      threshold: 0.2,
     },
   },
   projects: [
