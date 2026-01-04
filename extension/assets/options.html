@@ -33,6 +33,28 @@
     .btn-toggle-password[aria-pressed="true"] .icon-eye-closed {
       display: block;
     }
+
+    /* Label component moved to @primer/view-components in v22, include CSS here */
+    .Label {
+      border: var(--borderWidth-thin) solid var(--borderColor-default);
+      border-radius: var(--borderRadius-full);
+      display: inline-block;
+      font-size: var(--text-body-size-small);
+      font-weight: var(--base-text-weight-medium);
+      line-height: 18px;
+      padding: 0 var(--base-size-6);
+      white-space: nowrap;
+    }
+
+    .Label--attention {
+      border-color: var(--borderColor-attention-emphasis);
+      color: var(--fgColor-attention);
+    }
+
+    .Label--success {
+      border-color: var(--borderColor-success-emphasis);
+      color: var(--fgColor-success);
+    }
   </style>
 </head>
 <body class="p-4">
