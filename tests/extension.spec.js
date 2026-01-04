@@ -53,6 +53,7 @@ test.describe('GitHub Bookmarked Issues Extension', () => {
     context = await chromium.launchPersistentContext('', {
       headless: false,
       args: [
+        '--headless=new',
         `--disable-extensions-except=${extensionPath}`,
         `--load-extension=${extensionPath}`,
       ],
@@ -64,7 +65,8 @@ test.describe('GitHub Bookmarked Issues Extension', () => {
     }
     extensionId = background.url().split('/')[2];
 
-    // Use the existing blank page instead of creating a new one
+    // Reuse the blank page created by launchPersistentContext.
+    // Navigation tests use this page; extension page tests create their own.
     const pages = context.pages();
     page = pages[0] || await context.newPage();
   });
@@ -538,6 +540,137 @@ test.describe('GitHub Bookmarked Issues Extension', () => {
 
       await context.unroute('**/api.github.com/repos/**');
       await popupPage.close();
+    });
+  });
+
+  // ============================================================
+  // VISUAL REGRESSION - Screenshot comparison for CSS development
+  // ============================================================
+
+  test.describe('Visual Regression', { tag: '@visual' }, () => {
+    test('popup with issues', async () => {
+      // Setup mock bookmarks
+      const testBookmarks = {
+        'microsoft/playwright/issues/123': {
+          owner: 'microsoft',
+          repo: 'playwright',
+          number: 123,
+          type: 'issues',
+          bookmarkedAt: Date.now()
+        },
+        'facebook/react/issues/456': {
+          owner: 'facebook',
+          repo: 'react',
+          number: 456,
+          type: 'issues',
+          bookmarkedAt: Date.now() - 86400000
+        }
+      };
+      await addBookmarks(context, testBookmarks);
+
+      const popupPage = await context.newPage();
+
+      // Mock API responses
+      await popupPage.route('**/api.github.com/repos/**', async (route) => {
+        const url = route.request().url();
+        let data = {
+          title: 'Sample Issue',
+          state: 'open',
+          html_url: url,
+          updated_at: '2024-01-15T10:30:00Z',
+          comments: 5,
+          repository: { full_name: 'org/repo' }
+        };
+        if (url.includes('playwright')) {
+          data.title = 'Add visual regression testing support';
+          data.repository.full_name = 'microsoft/playwright';
+          data.state = 'open';
+          data.comments = 12;
+        } else if (url.includes('react')) {
+          data.title = 'Improve hydration performance';
+          data.repository.full_name = 'facebook/react';
+          data.state = 'closed';
+          data.comments = 42;
+        }
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify(data)
+        });
+      });
+
+      await popupPage.goto(`chrome-extension://${extensionId}/assets/popup.html`);
+      await popupPage.waitForSelector('.issue-item');
+      await popupPage.waitForTimeout(500);
+
+      await expect(popupPage).toHaveScreenshot('popup-with-issues.png');
+      await popupPage.close();
+    });
+
+    test('popup empty state', async () => {
+      await clearBookmarks(context);
+
+      const popupPage = await context.newPage();
+      await popupPage.goto(`chrome-extension://${extensionId}/assets/popup.html`);
+      await popupPage.waitForSelector('#empty-state');
+      await popupPage.waitForTimeout(300);
+
+      await expect(popupPage).toHaveScreenshot('popup-empty.png');
+      await popupPage.close();
+    });
+
+    test('popup import section', async () => {
+      const popupPage = await context.newPage();
+      await popupPage.goto(`chrome-extension://${extensionId}/assets/popup.html`);
+      await popupPage.waitForLoadState('domcontentloaded');
+
+      await popupPage.click('#import-btn');
+      await popupPage.waitForSelector('#import-section:not([style*="display: none"])');
+      await popupPage.waitForTimeout(300);
+
+      await expect(popupPage).toHaveScreenshot('popup-import.png');
+      await popupPage.close();
+    });
+
+    test('options page default', async () => {
+      const optionsPage = await context.newPage();
+      await optionsPage.goto(`chrome-extension://${extensionId}/assets/options.html`);
+      await optionsPage.evaluate(() => {
+        return new Promise((resolve) => {
+          chrome.storage.sync.remove('github_pat', resolve);
+        });
+      });
+      await optionsPage.reload();
+      await optionsPage.waitForLoadState('domcontentloaded');
+      await optionsPage.waitForTimeout(300);
+
+      await expect(optionsPage).toHaveScreenshot('options-default.png');
+      await optionsPage.close();
+    });
+
+    test('options page with token configured', async () => {
+      const optionsPage = await context.newPage();
+      await optionsPage.goto(`chrome-extension://${extensionId}/assets/options.html`);
+      await optionsPage.evaluate(() => {
+        return new Promise((resolve) => {
+          chrome.storage.sync.set({
+            github_pat: 'github_pat_mock_token_for_visual_testing'
+          }, resolve);
+        });
+      });
+      await optionsPage.reload();
+      await optionsPage.waitForLoadState('domcontentloaded');
+      await optionsPage.waitForTimeout(300);
+
+      await expect(optionsPage).toHaveScreenshot('options-configured.png');
+
+      // Cleanup
+      await optionsPage.evaluate(() => {
+        return new Promise((resolve) => {
+          chrome.storage.sync.remove('github_pat', resolve);
+        });
+      });
+      await optionsPage.close();
     });
   });
 
