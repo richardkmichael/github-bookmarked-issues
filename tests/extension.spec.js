@@ -193,42 +193,49 @@ test.describe('GitHub Bookmarked Issues Extension', () => {
     });
   });
 
-  // TODO: Investigate why bookmark button isn't appearing on public issue pages
-  // The button uses class 'prc-Button-ButtonBase-c50BI' - may need different locator
   test.describe('Bookmark Button (Public Issue Pages)', () => {
-    test.skip('appears on GitHub issue page', async () => {
-      await page.goto('https://github.com/microsoft/playwright/issues/1');
-      await page.waitForLoadState('networkidle');
+    const bookmarkSelector = '[data-extension-bookmark]';
+    const headerActionsSelector = '[data-component="PH_Actions"]';
 
-      // Button uses GitHub's Primer React classes, not a data attribute
-      const bookmarkButton = page.locator('button:has-text("Bookmark")');
+    test('appears on GitHub issue page', async () => {
+      await page.goto(issueUrl(TEST_ISSUES[0]));
+      await page.waitForLoadState('domcontentloaded');
+
+      await expect(page.locator(headerActionsSelector)).toBeVisible({ timeout: 15000 });
+
+      const bookmarkButton = page.locator(bookmarkSelector);
       await expect(bookmarkButton).toBeVisible({ timeout: 10000 });
     });
 
-    test.skip('toggles bookmark on click', async () => {
+    test('toggles bookmark on click', async () => {
       await clearBookmarks(context);
 
-      await page.goto('https://github.com/microsoft/playwright/issues/1');
-      await page.waitForLoadState('networkidle');
+      await page.goto(issueUrl(TEST_ISSUES[0]));
+      await page.waitForLoadState('domcontentloaded');
 
-      const bookmarkButton = page.locator('button:has-text("Bookmark")');
+      await expect(page.locator(headerActionsSelector)).toBeVisible({ timeout: 15000 });
+
+      const bookmarkButton = page.locator(bookmarkSelector);
       await expect(bookmarkButton).toBeVisible({ timeout: 10000 });
 
       // Click to add bookmark
       await bookmarkButton.click();
-      await page.waitForTimeout(500);
 
       // Verify bookmark was added to storage
-      let bookmarks = await getBookmarks(context);
-      expect(Object.keys(bookmarks)).toContain('microsoft/playwright/issues/1');
+      const expectedKey = `${TEST_ISSUES[0].owner}/${TEST_ISSUES[0].repo}/issues/${TEST_ISSUES[0].number}`;
+      await expect(async () => {
+        const bookmarks = await getBookmarks(context);
+        expect(Object.keys(bookmarks)).toContain(expectedKey);
+      }).toPass({ timeout: 5000 });
 
       // Click again to remove bookmark
       await bookmarkButton.click();
-      await page.waitForTimeout(500);
 
       // Verify bookmark was removed
-      bookmarks = await getBookmarks(context);
-      expect(Object.keys(bookmarks)).not.toContain('microsoft/playwright/issues/1');
+      await expect(async () => {
+        const bookmarks = await getBookmarks(context);
+        expect(Object.keys(bookmarks)).not.toContain(expectedKey);
+      }).toPass({ timeout: 5000 });
     });
   });
 
