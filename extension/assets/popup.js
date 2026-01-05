@@ -143,7 +143,7 @@ async function displayIssues(bookmarks) {
     // Handle comments
     if (issue.comments > 0) {
       const comments = item.querySelector('.comments');
-      comments.style.display = '';
+      comments.classList.remove('d-none');
       comments.querySelector('.comments-icon').appendChild(getIcon('comment'));
       comments.querySelector('.comments-count').textContent = issue.comments;
     }
@@ -219,14 +219,14 @@ async function copyAllToClipboard(issues) {
     const checkIcon = document.getElementById('check-icon');
 
     button.classList.add('success');
-    clipboardIcon.style.display = 'none';
-    checkIcon.style.display = 'block';
+    clipboardIcon.classList.add('d-none');
+    checkIcon.classList.remove('d-none');
 
     // Reset after 2 seconds
     setTimeout(() => {
       button.classList.remove('success');
-      clipboardIcon.style.display = 'block';
-      checkIcon.style.display = 'none';
+      clipboardIcon.classList.remove('d-none');
+      checkIcon.classList.add('d-none');
     }, 2000);
   } catch (err) {
     console.error('[Popup] Failed to copy to clipboard:', err);
