@@ -158,7 +158,6 @@ async function displayIssues(bookmarks) {
 
     // Add remove button functionality
     const removeBtn = item.querySelector('.remove-btn');
-    removeBtn.appendChild(getIcon('remove'));
     removeBtn.addEventListener('click', async (e) => {
       e.stopPropagation();
 
