@@ -5,6 +5,38 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const extensionPath = path.join(__dirname, '..', 'build', 'chrome');
 
+// Pool of known-good GitHub issues that don't redirect to pull requests.
+// Use these in tests instead of guessing issue numbers.
+const TEST_ISSUES = [
+  { owner: 'microsoft', repo: 'playwright', number: 38673 },
+  { owner: 'microsoft', repo: 'playwright', number: 38674 },
+  { owner: 'facebook', repo: 'react', number: 100 },
+];
+
+// Helper to create a bookmarks object from a single test issue
+function makeBookmark(issue, bookmarkedAt = Date.now()) {
+  const key = `${issue.owner}/${issue.repo}/issues/${issue.number}`;
+  return {
+    [key]: {
+      owner: issue.owner,
+      repo: issue.repo,
+      number: issue.number,
+      type: 'issues',
+      bookmarkedAt
+    }
+  };
+}
+
+// Helper to create bookmarks object from multiple test issues
+function makeBookmarks(...issues) {
+  return Object.assign({}, ...issues.map(issue => makeBookmark(issue)));
+}
+
+// Get issue URL from test issue
+function issueUrl(issue) {
+  return `https://github.com/${issue.owner}/${issue.repo}/issues/${issue.number}`;
+}
+
 test.describe('GitHub Bookmarked Issues Extension', () => {
   let context;
   let page;
@@ -93,7 +125,7 @@ test.describe('GitHub Bookmarked Issues Extension', () => {
     const headerActionsSelector = '[data-component="PH_Actions"]';
 
     test('appears on direct navigation to issue page', async () => {
-      await page.goto('https://github.com/microsoft/playwright/issues/38673');
+      await page.goto(issueUrl(TEST_ISSUES[0]));
       await page.waitForLoadState('domcontentloaded');
 
       // Wait for header actions container (needed for button insertion)
@@ -854,16 +886,7 @@ test.describe('GitHub Bookmarked Issues Extension', () => {
     });
 
     test.skip('displays bookmarked issues', async () => {
-      const testBookmarks = {
-        'microsoft/playwright/issues/1': {
-          owner: 'microsoft',
-          repo: 'playwright',
-          number: 1,
-          type: 'issues',
-          bookmarkedAt: Date.now()
-        }
-      };
-      await addBookmarks(context, testBookmarks);
+      await addBookmarks(context, makeBookmark(TEST_ISSUES[0]));
 
       await page.goto('https://github.com/issues/created');
       await page.waitForLoadState('networkidle');
@@ -874,7 +897,7 @@ test.describe('GitHub Bookmarked Issues Extension', () => {
 
       await page.waitForTimeout(3000);
 
-      const issueLink = page.locator('a[href*="playwright/issues/1"]');
+      const issueLink = page.locator(`a[href*="${TEST_ISSUES[0].repo}/issues/${TEST_ISSUES[0].number}"]`);
       await expect(issueLink).toBeVisible({ timeout: 10000 });
     });
 
@@ -894,16 +917,7 @@ test.describe('GitHub Bookmarked Issues Extension', () => {
 
     test.skip('auto-refreshes when bookmarks change in another tab', async () => {
       // Start with one bookmark
-      const initialBookmarks = {
-        'microsoft/playwright/issues/38673': {
-          owner: 'microsoft',
-          repo: 'playwright',
-          number: 38673,
-          type: 'issues',
-          bookmarkedAt: Date.now()
-        }
-      };
-      await addBookmarks(context, initialBookmarks);
+      await addBookmarks(context, makeBookmark(TEST_ISSUES[0]));
 
       // Open bookmarks view
       await page.goto('https://github.com/issues/created');
@@ -918,17 +932,7 @@ test.describe('GitHub Bookmarked Issues Extension', () => {
       await expect(resultsHeading).toContainText('1 result', { timeout: 10000 });
 
       // Simulate bookmark added from another tab by directly modifying storage
-      const updatedBookmarks = {
-        ...initialBookmarks,
-        'microsoft/playwright/issues/38674': {
-          owner: 'microsoft',
-          repo: 'playwright',
-          number: 38674,
-          type: 'issues',
-          bookmarkedAt: Date.now()
-        }
-      };
-      await addBookmarks(context, updatedBookmarks);
+      await addBookmarks(context, makeBookmarks(TEST_ISSUES[0], TEST_ISSUES[1]));
 
       // View should auto-refresh to show 2 results (debounced at 25ms)
       await expect(resultsHeading).toContainText('2 results', { timeout: 5000 });
@@ -936,39 +940,8 @@ test.describe('GitHub Bookmarked Issues Extension', () => {
   });
 
   test.describe('Error Handling (Requires GitHub Login)', () => {
-    const singleBookmark = {
-      'microsoft/playwright/issues/1': {
-        owner: 'microsoft',
-        repo: 'playwright',
-        number: 1,
-        type: 'issues',
-        bookmarkedAt: Date.now()
-      }
-    };
-
-    const multipleBookmarks = {
-      'microsoft/playwright/issues/1': {
-        owner: 'microsoft',
-        repo: 'playwright',
-        number: 1,
-        type: 'issues',
-        bookmarkedAt: Date.now()
-      },
-      'facebook/react/issues/100': {
-        owner: 'facebook',
-        repo: 'react',
-        number: 100,
-        type: 'issues',
-        bookmarkedAt: Date.now()
-      },
-      'nodejs/node/issues/500': {
-        owner: 'nodejs',
-        repo: 'node',
-        number: 500,
-        type: 'issues',
-        bookmarkedAt: Date.now()
-      }
-    };
+    const singleBookmark = makeBookmark(TEST_ISSUES[0]);
+    const multipleBookmarks = makeBookmarks(TEST_ISSUES[0], TEST_ISSUES[1], TEST_ISSUES[2]);
 
     test.skip('displays error messages with response codes when API fails', async () => {
       await addBookmarks(context, singleBookmark);
