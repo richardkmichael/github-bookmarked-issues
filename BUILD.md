@@ -149,8 +149,34 @@ ln -sf manifest-firefox.json extension/manifest.json
 ```bash
 npm test              # All tests
 npm run test:chrome   # Chrome-specific
+npm run test:visual   # Visual regression tests only
 npm run lint          # Lint Firefox build
 ```
+
+### Authenticated Tests
+
+Some tests require GitHub authentication (bookmarks view, error handling). These skip gracefully if not configured.
+
+Setup:
+```bash
+node scripts/obtain-github-authorization.js
+# Browser opens - log in to GitHub, then press Enter
+# Copy output to .env file
+```
+
+The script outputs a `GITHUB_AUTH_STATE` value to add to `.env`. Sessions expire after ~2 weeks.
+
+### Version Tracking
+
+Dev builds include git commit info in `version_name` (visible in `chrome://extensions` or `about:addons`):
+
+| Build Type                 | version_name Example                      |
+|----------------------------|-------------------------------------------|
+| Production (tagged commit) | `1.0.0`                                   |
+| Dev (clean)                | `1.0.0-dev+abc1234`                       |
+| Dev (uncommitted changes)  | `1.0.0-dev+abc1234-dirty:worktree-name`   |
+
+The dirty suffix includes the worktree directory name to distinguish between multiple worktrees.
 
 ## Dependency Information
 
