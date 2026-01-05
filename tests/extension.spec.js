@@ -891,6 +891,48 @@ test.describe('GitHub Bookmarked Issues Extension', () => {
       const emptyState = page.locator('#bookmarks-empty');
       await expect(emptyState).toBeVisible({ timeout: 10000 });
     });
+
+    test.skip('auto-refreshes when bookmarks change in another tab', async () => {
+      // Start with one bookmark
+      const initialBookmarks = {
+        'microsoft/playwright/issues/38673': {
+          owner: 'microsoft',
+          repo: 'playwright',
+          number: 38673,
+          type: 'issues',
+          bookmarkedAt: Date.now()
+        }
+      };
+      await addBookmarks(context, initialBookmarks);
+
+      // Open bookmarks view
+      await page.goto('https://github.com/issues/created');
+      await page.waitForLoadState('networkidle');
+
+      const bookmarksNav = page.locator('nav a:has-text("Bookmarks")');
+      await expect(bookmarksNav).toBeVisible({ timeout: 10000 });
+      await bookmarksNav.click();
+
+      // Verify initial state shows 1 result
+      const resultsHeading = page.locator('h3:has-text("result")');
+      await expect(resultsHeading).toContainText('1 result', { timeout: 10000 });
+
+      // Simulate bookmark added from another tab by directly modifying storage
+      const updatedBookmarks = {
+        ...initialBookmarks,
+        'microsoft/playwright/issues/38674': {
+          owner: 'microsoft',
+          repo: 'playwright',
+          number: 38674,
+          type: 'issues',
+          bookmarkedAt: Date.now()
+        }
+      };
+      await addBookmarks(context, updatedBookmarks);
+
+      // View should auto-refresh to show 2 results (debounced at 25ms)
+      await expect(resultsHeading).toContainText('2 results', { timeout: 5000 });
+    });
   });
 
   test.describe('Error Handling (Requires GitHub Login)', () => {

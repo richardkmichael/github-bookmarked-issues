@@ -436,10 +436,10 @@ function createBookmarksViewTemplate() {
                             </div>
                           </div>
                         </div>
+                        <div id="bookmarks-empty" class="blankslate" role="region" aria-live="polite" aria-atomic="true" style="display: none;">
+                          <h3 class="blankslate-heading">No bookmarked issues</h3>
+                        </div>
                         <div id="bookmarks-list" class="ListView-module__ul--A_8jF" data-listview-component="items-list" data-density="default" tabindex="-1">
-                          <div id="bookmarks-empty" class="blankslate" role="region" aria-live="polite" aria-atomic="true" style="display: none;">
-                            <h3 class="blankslate-heading">No bookmarked issues</h3>
-                          </div>
                         </div>
                       </div>
                     </div>
@@ -974,9 +974,15 @@ async function loadAndRenderBookmarks() {
   const list = container.querySelector('#bookmarks-list');
   const resultsSection = container.querySelector('#bookmarks-results-section');
 
+  // Ensure required elements exist
+  if (!error || !list) {
+    console.warn('[Bookmarked] Required elements not found in container');
+    return;
+  }
+
   // Show skeleton placeholders while loading (25 to match page size)
   error.style.display = 'none';
-  empty.style.display = 'none';
+  if (empty) empty.style.display = 'none';
   // Hide header during loading - will show with actual count when data loads
   const countHeading = container.querySelector('#bookmarks-count');
   if (resultsSection) {
@@ -989,9 +995,8 @@ async function loadAndRenderBookmarks() {
     const bookmarkIds = Object.keys(bookmarks);
 
     if (bookmarkIds.length === 0) {
-      // Clear list items but preserve empty state element
-      list.replaceChildren(empty);
-      empty.style.display = 'block';
+      list.replaceChildren();
+      if (empty) empty.style.display = 'block';
       // Show header with 0 results
       if (resultsSection && countHeading) {
         countHeading.textContent = '0 results';
@@ -1043,8 +1048,7 @@ async function loadAndRenderBookmarks() {
     }
 
     if (validIssues.length === 0) {
-      // Clear list items but preserve empty state element
-      list.replaceChildren(empty);
+      list.replaceChildren();
       // Show header with 0 results
       if (resultsSection && countHeading) {
         countHeading.textContent = '0 results';
@@ -1056,7 +1060,7 @@ async function loadAndRenderBookmarks() {
         error.textContent = `Failed to load issue details. You may need to log in to GitHub.`;
       } else {
         // Genuinely no bookmarks
-        empty.style.display = 'block';
+        if (empty) empty.style.display = 'block';
       }
       return;
     }
@@ -1089,7 +1093,7 @@ async function loadAndRenderBookmarks() {
 
   } catch (e) {
     console.error('[Bookmarked] Error loading bookmarks:', e);
-    list.replaceChildren(); // Clear skeleton placeholders
+    list.replaceChildren();
     if (resultsSection) resultsSection.style.display = 'none';
     error.style.display = 'block';
     error.textContent = `Failed to load bookmarked issues: ${e.message}`;
@@ -1136,6 +1140,29 @@ function setupFilterInput() {
         countHeading.textContent = `${visibleCount} result${visibleCount !== 1 ? 's' : ''}`;
       }
     }, 300);
+  });
+}
+
+// Debounce timeout for cross-tab bookmark sync
+let refreshDebounceTimeout = null;
+const REFRESH_DEBOUNCE_MS = 25;
+
+// Setup listener for bookmark changes from other tabs/popup
+function setupStorageListener() {
+  browser.storage.onChanged.addListener((changes, areaName) => {
+    if (areaName !== 'sync') return;
+    if (!changes.bookmarked_issues) return;
+
+    // Only refresh if bookmarks view is currently visible
+    const container = document.querySelector('[data-extension-bookmarks-container]');
+    if (!container) return;
+
+    // Debounce to batch rapid changes (e.g., bulk import)
+    clearTimeout(refreshDebounceTimeout);
+    refreshDebounceTimeout = setTimeout(() => {
+      console.log('[Bookmarked] Storage changed, reloading bookmarks');
+      loadAndRenderBookmarks();
+    }, REFRESH_DEBOUNCE_MS);
   });
 }
 
@@ -1527,6 +1554,9 @@ function init() {
       showBookmarksView();
     }
   }
+
+  // Listen for bookmark changes from other tabs/popup
+  setupStorageListener();
 
   console.log('[Bookmarked] Content script initialization complete');
 }
