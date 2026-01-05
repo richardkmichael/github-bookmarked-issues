@@ -1,6 +1,7 @@
 import { test, expect, chromium } from '@playwright/test';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { readFileSync } from 'fs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const extensionPath = path.join(__dirname, '..', 'build', 'chrome');
@@ -35,6 +36,11 @@ function makeBookmarks(...issues) {
 // Get issue URL from test issue
 function issueUrl(issue) {
   return `https://github.com/${issue.owner}/${issue.repo}/issues/${issue.number}`;
+}
+
+// Load test fixture file
+function loadFixture(name) {
+  return readFileSync(path.join(__dirname, 'fixtures', name), 'utf-8');
 }
 
 test.describe('GitHub Bookmarked Issues Extension', () => {
@@ -357,6 +363,35 @@ test.describe('GitHub Bookmarked Issues Extension', () => {
 
       const submitBtn = popupPage.locator('#import-submit-btn');
       await expect(submitBtn).toBeDisabled();
+
+      await popupPage.close();
+    });
+
+    test('validates fixture file with mixed valid, invalid, and duplicate URLs', async () => {
+      await clearBookmarks(context);
+
+      const popupPage = await context.newPage();
+      await popupPage.goto(`chrome-extension://${extensionId}/assets/popup.html`);
+
+      const importBtn = popupPage.locator('#import-btn');
+      await importBtn.click();
+
+      const fixture = loadFixture('import-issues.md');
+      const textarea = popupPage.locator('#import-textarea');
+      await textarea.fill(fixture);
+
+      await popupPage.waitForTimeout(500);
+
+      const validation = popupPage.locator('#import-validation');
+      await expect(validation).toBeVisible();
+
+      // Fixture contains: 3 unique valid issues (duplicates within fixture collapsed), 7 invalid entries
+      await expect(validation).toContainText('3 valid');
+      await expect(validation).toContainText('7 invalid');
+
+      // Submit should be enabled since there are valid URLs
+      const submitBtn = popupPage.locator('#import-submit-btn');
+      await expect(submitBtn).toBeEnabled();
 
       await popupPage.close();
     });
