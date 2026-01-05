@@ -137,7 +137,11 @@ test.describe('GitHub Bookmarked Issues Extension', () => {
   });
 
   // Bookmark button navigation tests - ensure button appears regardless of navigation path
+  // NOTE: These tests can be flaky due to GitHub's variable page load times and React hydration.
+  // Retries are enabled to mitigate transient failures.
   test.describe('Bookmark Button Navigation', { tag: '@navigation' }, () => {
+    test.describe.configure({ retries: 2 });
+
     const bookmarkSelector = '[data-extension-bookmark]';
     // Selector for GitHub's header actions (where bookmark button is inserted)
     const headerActionsSelector = '[data-component="PH_Actions"]';
