@@ -282,7 +282,7 @@ test.describe('GitHub Bookmarked Issues Extension', () => {
       await popupPage.close();
     });
 
-    test('import validates pasted URLs', async () => {
+    test('imports from fixture and saves to storage', async () => {
       await clearBookmarks(context);
 
       const popupPage = await context.newPage();
@@ -294,57 +294,38 @@ test.describe('GitHub Bookmarked Issues Extension', () => {
       const importSection = popupPage.locator('#import-section');
       await expect(importSection).toBeVisible();
 
+      const fixture = loadFixture('import-issues.md');
       const textarea = popupPage.locator('#import-textarea');
-      await textarea.fill(`- [Valid Issue](https://github.com/microsoft/playwright/issues/1)
-- [Invalid - not GitHub](https://example.com/issue/123)`);
+      await textarea.fill(fixture);
 
       await popupPage.waitForTimeout(500);
 
+      // Fixture contains: 3 unique valid issues, 7 invalid entries
       const validation = popupPage.locator('#import-validation');
       await expect(validation).toBeVisible();
-      await expect(validation).toContainText('1 valid');
-      await expect(validation).toContainText('1 invalid');
+      await expect(validation).toContainText('3 valid');
+      await expect(validation).toContainText('7 invalid');
 
-      await popupPage.close();
-    });
-
-    test('imports valid URLs and updates storage', async () => {
-      await clearBookmarks(context);
-
-      const popupPage = await context.newPage();
-      await popupPage.goto(`chrome-extension://${extensionId}/assets/popup.html`);
-
-      const importBtn = popupPage.locator('#import-btn');
-      await importBtn.click();
-
-      const textarea = popupPage.locator('#import-textarea');
-      await textarea.fill('- https://github.com/microsoft/playwright/issues/1');
-
-      await popupPage.waitForTimeout(500);
-
+      // Import the valid issues
       const submitBtn = popupPage.locator('#import-submit-btn');
       await expect(submitBtn).toBeEnabled();
       await submitBtn.click();
 
       await popupPage.waitForTimeout(1000);
 
+      // Verify all 3 valid issues were saved to storage
       const bookmarks = await getBookmarks(context);
-      expect(Object.keys(bookmarks)).toContain('microsoft/playwright/issues/1');
+      const keys = Object.keys(bookmarks);
+      expect(keys).toContain('microsoft/playwright/issues/38673');
+      expect(keys).toContain('microsoft/playwright/issues/38674');
+      expect(keys).toContain('facebook/react/issues/100');
+      expect(keys).toHaveLength(3);
 
       await popupPage.close();
     });
 
     test('detects duplicate bookmarks during import', async () => {
-      const existingBookmarks = {
-        'microsoft/playwright/issues/1': {
-          owner: 'microsoft',
-          repo: 'playwright',
-          number: 1,
-          type: 'issues',
-          bookmarkedAt: Date.now()
-        }
-      };
-      await addBookmarks(context, existingBookmarks);
+      await addBookmarks(context, makeBookmark(TEST_ISSUES[0]));
 
       const popupPage = await context.newPage();
       await popupPage.goto(`chrome-extension://${extensionId}/assets/popup.html`);
@@ -353,7 +334,7 @@ test.describe('GitHub Bookmarked Issues Extension', () => {
       await importBtn.click();
 
       const textarea = popupPage.locator('#import-textarea');
-      await textarea.fill('- https://github.com/microsoft/playwright/issues/1');
+      await textarea.fill(`- ${issueUrl(TEST_ISSUES[0])}`);
 
       await popupPage.waitForTimeout(500);
 
@@ -363,35 +344,6 @@ test.describe('GitHub Bookmarked Issues Extension', () => {
 
       const submitBtn = popupPage.locator('#import-submit-btn');
       await expect(submitBtn).toBeDisabled();
-
-      await popupPage.close();
-    });
-
-    test('validates fixture file with mixed valid, invalid, and duplicate URLs', async () => {
-      await clearBookmarks(context);
-
-      const popupPage = await context.newPage();
-      await popupPage.goto(`chrome-extension://${extensionId}/assets/popup.html`);
-
-      const importBtn = popupPage.locator('#import-btn');
-      await importBtn.click();
-
-      const fixture = loadFixture('import-issues.md');
-      const textarea = popupPage.locator('#import-textarea');
-      await textarea.fill(fixture);
-
-      await popupPage.waitForTimeout(500);
-
-      const validation = popupPage.locator('#import-validation');
-      await expect(validation).toBeVisible();
-
-      // Fixture contains: 3 unique valid issues (duplicates within fixture collapsed), 7 invalid entries
-      await expect(validation).toContainText('3 valid');
-      await expect(validation).toContainText('7 invalid');
-
-      // Submit should be enabled since there are valid URLs
-      const submitBtn = popupPage.locator('#import-submit-btn');
-      await expect(submitBtn).toBeEnabled();
 
       await popupPage.close();
     });
