@@ -10,7 +10,7 @@ const PAT_KEY = 'github_pat';
 const patInput = document.getElementById('pat-input');
 const saveBtn = document.getElementById('save-btn');
 const testBtn = document.getElementById('test-btn');
-const clearBtn = document.getElementById('clear-btn');
+const removeBtn = document.getElementById('remove-btn');
 const messageEl = document.getElementById('message');
 const statusConfigured = document.getElementById('status-configured');
 const statusNotConfigured = document.getElementById('status-not-configured');
@@ -27,19 +27,35 @@ function showMessage(text, type) {
   }, 5000);
 }
 
+// Track whether a token is saved in storage
+let hasStoredToken = false;
+
 // Update UI based on whether token is configured
 function updateStatus(hasToken) {
+  hasStoredToken = hasToken;
   if (hasToken) {
     statusConfigured.classList.remove('d-none');
     statusNotConfigured.classList.add('d-none');
-    clearBtn.classList.remove('d-none');
     patInput.placeholder = '••••••••••••••••••••••••••••••••••••••••';
   } else {
     statusConfigured.classList.add('d-none');
     statusNotConfigured.classList.remove('d-none');
-    clearBtn.classList.add('d-none');
     patInput.placeholder = 'github_pat_xxxxxxxxxxxxxxxxxxxx';
   }
+  syncButtonStates();
+}
+
+// Test and Remove buttons should be enabled if there's input or a stored token
+function hasTestableContent() {
+  return hasStoredToken || patInput.value.trim() !== '';
+}
+
+function syncButtonStates() {
+  const hasContent = hasTestableContent();
+  const hasInput = patInput.value.trim() !== '';
+  testBtn.disabled = !hasContent;
+  removeBtn.disabled = !hasContent;
+  toggleBtn.disabled = !hasInput;
 }
 
 // Validate PAT format (fine-grained tokens only)
@@ -74,8 +90,11 @@ async function testPat(pat) {
 async function loadExistingPat() {
   try {
     const result = await browser.storage.sync.get(PAT_KEY);
-    const hasToken = !!result[PAT_KEY];
-    updateStatus(hasToken);
+    const token = result[PAT_KEY];
+    if (token) {
+      patInput.value = token;
+    }
+    updateStatus(!!token);
   } catch (e) {
     console.error('[Options] Error loading PAT:', e);
   }
@@ -97,14 +116,12 @@ async function savePat() {
 
   // Test the token first
   saveBtn.disabled = true;
-  saveBtn.textContent = 'Validating...';
 
   const result = await testPat(pat);
 
   if (!result.valid) {
     showMessage(`Token validation failed: ${result.error}`, 'error');
     saveBtn.disabled = false;
-    saveBtn.textContent = 'Save Token';
     return;
   }
 
@@ -112,20 +129,17 @@ async function savePat() {
   try {
     await browser.storage.sync.set({ [PAT_KEY]: pat });
     showMessage(`Token saved successfully! Authenticated as @${result.user}`, 'success');
-    patInput.value = '';
     updateStatus(true);
   } catch (e) {
     showMessage(`Error saving token: ${e.message}`, 'error');
   }
 
   saveBtn.disabled = false;
-  saveBtn.textContent = 'Save Token';
 }
 
 // Test token (from input field or stored)
 async function testToken() {
   testBtn.disabled = true;
-  testBtn.textContent = 'Testing...';
 
   try {
     // Prefer input field, fall back to stored token
@@ -138,14 +152,12 @@ async function testToken() {
     if (!pat) {
       showMessage('Enter a token to test', 'error');
       testBtn.disabled = false;
-      testBtn.textContent = 'Test';
       return;
     }
 
     if (!isValidPatFormat(pat)) {
       showMessage('Invalid token format. Use a fine-grained token (github_pat_...)', 'error');
       testBtn.disabled = false;
-      testBtn.textContent = 'Test';
       return;
     }
 
@@ -161,23 +173,13 @@ async function testToken() {
   }
 
   testBtn.disabled = false;
-  testBtn.textContent = 'Test';
 }
 
-// Clear PAT
-async function clearPat() {
-  if (!confirm('Are you sure you want to remove your GitHub token?')) {
-    return;
-  }
-
-  try {
-    await browser.storage.sync.remove(PAT_KEY);
-    showMessage('Token removed', 'success');
-    patInput.value = '';
-    updateStatus(false);
-  } catch (e) {
-    showMessage(`Error removing token: ${e.message}`, 'error');
-  }
+// Remove token from input and storage
+function removeToken() {
+  patInput.value = '';
+  browser.storage.sync.remove(PAT_KEY);
+  updateStatus(false);
 }
 
 // Toggle password visibility
@@ -192,7 +194,7 @@ function toggleVisibility() {
 const toggleBtn = document.getElementById('toggle-visibility-btn');
 saveBtn.addEventListener('click', savePat);
 testBtn.addEventListener('click', testToken);
-clearBtn.addEventListener('click', clearPat);
+removeBtn.addEventListener('click', removeToken);
 toggleBtn.addEventListener('click', toggleVisibility);
 
 // Allow Enter key to save
@@ -201,6 +203,9 @@ patInput.addEventListener('keydown', (e) => {
     savePat();
   }
 });
+
+// Update button states when input changes
+patInput.addEventListener('input', syncButtonStates);
 
 // Initialize
 loadExistingPat();

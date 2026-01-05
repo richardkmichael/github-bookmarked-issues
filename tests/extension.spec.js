@@ -344,12 +344,58 @@ test.describe('GitHub Bookmarked Issues Extension', () => {
       await optionsPage.close();
     });
 
-    test('eyeball toggle shows and hides token', async () => {
+    test('controls are disabled when no input and no stored token', { tag: '@pat' }, async () => {
+      const optionsPage = await context.newPage();
+      await optionsPage.goto(`chrome-extension://${extensionId}/assets/options.html`);
+
+      // Ensure clean state
+      await optionsPage.evaluate(() => {
+        return new Promise((resolve) => {
+          chrome.storage.sync.remove('github_pat', resolve);
+        });
+      });
+      await optionsPage.reload();
+      await optionsPage.waitForLoadState('domcontentloaded');
+
+      const input = optionsPage.locator('#pat-input');
+      const testBtn = optionsPage.locator('#test-btn');
+      const removeBtn = optionsPage.locator('#remove-btn');
+      const toggleBtn = optionsPage.locator('#toggle-visibility-btn');
+
+      await expect(input).toHaveValue('');
+      await expect(testBtn).toBeDisabled();
+      await expect(removeBtn).toBeDisabled();
+      await expect(toggleBtn).toBeDisabled();
+
+      await optionsPage.close();
+    });
+
+    test('controls are enabled when input is present', { tag: '@pat' }, async () => {
+      const optionsPage = await context.newPage();
+      await optionsPage.goto(`chrome-extension://${extensionId}/assets/options.html`);
+
+      const input = optionsPage.locator('#pat-input');
+      const testBtn = optionsPage.locator('#test-btn');
+      const removeBtn = optionsPage.locator('#remove-btn');
+      const toggleBtn = optionsPage.locator('#toggle-visibility-btn');
+
+      await input.fill('github_pat_test');
+
+      await expect(testBtn).toBeEnabled();
+      await expect(removeBtn).toBeEnabled();
+      await expect(toggleBtn).toBeEnabled();
+
+      await optionsPage.close();
+    });
+
+    test('visibility toggle shows and hides input', { tag: '@pat' }, async () => {
       const optionsPage = await context.newPage();
       await optionsPage.goto(`chrome-extension://${extensionId}/assets/options.html`);
 
       const input = optionsPage.locator('#pat-input');
       const toggleBtn = optionsPage.locator('#toggle-visibility-btn');
+
+      await input.fill('github_pat_test');
 
       // Initially password type (hidden)
       await expect(input).toHaveAttribute('type', 'password');
@@ -368,7 +414,47 @@ test.describe('GitHub Bookmarked Issues Extension', () => {
       await optionsPage.close();
     });
 
-    test('test button validates format before testing', async () => {
+    test('saved token loads on page open', { tag: '@pat' }, async () => {
+      const testToken = 'github_pat_11ABCDEFGHIJKLMNOPQRST_1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW';
+
+      // Save token directly to storage
+      const setupPage = await context.newPage();
+      await setupPage.goto(`chrome-extension://${extensionId}/assets/options.html`);
+      await setupPage.evaluate((token) => {
+        return new Promise((resolve) => {
+          chrome.storage.sync.set({ github_pat: token }, resolve);
+        });
+      }, testToken);
+      await setupPage.close();
+
+      // Open fresh options page (simulates reopening)
+      const optionsPage = await context.newPage();
+      await optionsPage.goto(`chrome-extension://${extensionId}/assets/options.html`);
+      await optionsPage.waitForLoadState('domcontentloaded');
+      await optionsPage.waitForTimeout(100); // Wait for loadExistingPat
+
+      const input = optionsPage.locator('#pat-input');
+      const toggleBtn = optionsPage.locator('#toggle-visibility-btn');
+
+      // Token should be loaded and masked
+      await expect(input).toHaveAttribute('type', 'password');
+      await expect(input).toHaveValue(testToken);
+
+      // Click toggle to reveal
+      await toggleBtn.click();
+      await expect(input).toHaveAttribute('type', 'text');
+      await expect(input).toHaveValue(testToken);
+
+      // Cleanup
+      await optionsPage.evaluate(() => {
+        return new Promise((resolve) => {
+          chrome.storage.sync.remove('github_pat', resolve);
+        });
+      });
+      await optionsPage.close();
+    });
+
+    test('test button rejects invalid format', { tag: '@pat' }, async () => {
       const optionsPage = await context.newPage();
       await optionsPage.goto(`chrome-extension://${extensionId}/assets/options.html`);
 
@@ -386,7 +472,7 @@ test.describe('GitHub Bookmarked Issues Extension', () => {
       await optionsPage.close();
     });
 
-    test('save button validates format', async () => {
+    test('save button rejects invalid format', { tag: '@pat' }, async () => {
       const optionsPage = await context.newPage();
       await optionsPage.goto(`chrome-extension://${extensionId}/assets/options.html`);
 
@@ -404,7 +490,7 @@ test.describe('GitHub Bookmarked Issues Extension', () => {
       await optionsPage.close();
     });
 
-    test('shows error for empty token', async () => {
+    test('save button rejects empty input', { tag: '@pat' }, async () => {
       const optionsPage = await context.newPage();
       await optionsPage.goto(`chrome-extension://${extensionId}/assets/options.html`);
 
@@ -417,6 +503,86 @@ test.describe('GitHub Bookmarked Issues Extension', () => {
       await expect(message).toBeVisible();
       await expect(message).toContainText('Enter a token');
 
+      await optionsPage.close();
+    });
+
+    test('remove button clears input and storage', { tag: '@pat' }, async () => {
+      const testToken = 'github_pat_11ABCDEFGHIJKLMNOPQRST_1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW';
+
+      // Mock the GitHub API for token validation
+      await context.route('**/api.github.com/user', async (route) => {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ login: 'testuser' })
+        });
+      });
+
+      const optionsPage = await context.newPage();
+      await optionsPage.goto(`chrome-extension://${extensionId}/assets/options.html`);
+
+      // Ensure clean state
+      await optionsPage.evaluate(() => {
+        return new Promise((resolve) => {
+          chrome.storage.sync.remove('github_pat', resolve);
+        });
+      });
+      await optionsPage.reload();
+      await optionsPage.waitForLoadState('domcontentloaded');
+
+      const input = optionsPage.locator('#pat-input');
+      const saveBtn = optionsPage.locator('#save-btn');
+      const removeBtn = optionsPage.locator('#remove-btn');
+
+      // Fill and save the token
+      await input.fill(testToken);
+      await saveBtn.click();
+      await expect(optionsPage.locator('#message')).toContainText('saved successfully', { timeout: 5000 });
+
+      // Verify token is in input after save
+      await expect(input).toHaveValue(testToken);
+
+      // Track if confirm() is called - it should NOT be
+      await optionsPage.evaluate(() => {
+        window._confirmCalled = false;
+        window._originalConfirm = window.confirm;
+        window.confirm = (msg) => {
+          window._confirmCalled = true;
+          return true;
+        };
+      });
+
+      // Click Remove - clears input and storage, no confirmation
+      await removeBtn.click();
+      await optionsPage.waitForTimeout(100);
+
+      const result = await optionsPage.evaluate(() => {
+        return {
+          confirmCalled: window._confirmCalled,
+          inputValue: document.getElementById('pat-input').value
+        };
+      });
+
+      // Restore confirm
+      await optionsPage.evaluate(() => {
+        window.confirm = window._originalConfirm;
+      });
+
+      // Remove should NOT show confirmation dialog
+      expect(result.confirmCalled).toBe(false);
+
+      // Input should be empty
+      expect(result.inputValue).toBe('');
+
+      // Storage should be cleared
+      const storedToken = await optionsPage.evaluate(() => {
+        return new Promise((resolve) => {
+          chrome.storage.sync.get('github_pat', (r) => resolve(r.github_pat));
+        });
+      });
+      expect(storedToken).toBeUndefined();
+
+      await context.unroute('**/api.github.com/user');
       await optionsPage.close();
     });
 
