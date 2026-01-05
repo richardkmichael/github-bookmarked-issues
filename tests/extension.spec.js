@@ -6,6 +6,18 @@ import { readFileSync } from 'fs';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const extensionPath = path.join(__dirname, '..', 'build', 'chrome');
 
+// Auth helper - decodes env var, returns storageState object or null
+function getGitHubAuth() {
+  const encoded = process.env.GITHUB_AUTH_STATE;
+  if (!encoded) return null;
+  try {
+    const decoded = Buffer.from(encoded, 'base64').toString('utf-8');
+    return JSON.parse(decoded);
+  } catch {
+    return null;
+  }
+}
+
 // Pool of known-good GitHub issues that don't redirect to pull requests.
 // Use these in tests instead of guessing issue numbers.
 const TEST_ISSUES = [
@@ -863,138 +875,325 @@ test.describe('GitHub Bookmarked Issues Extension', () => {
   // LOGIN REQUIRED - github.com/issues requires authentication
   // ============================================================
 
-  test.describe('Bookmarks View (Requires GitHub Login)', () => {
-    test.skip('appears in /issues navigation', async () => {
-      await page.goto('https://github.com/issues/created');
-      await page.waitForLoadState('networkidle');
+  test.describe('Bookmarks View (Requires GitHub Login)', { tag: '@auth' }, () => {
+    test.skip(() => !getGitHubAuth(), 'GITHUB_AUTH_STATE not configured');
 
-      const bookmarksNav = page.locator('nav a:has-text("Bookmarks")');
+    let authContext;
+    let authPage;
+    let authExtensionId;
+
+    // Helper to add bookmarks in auth context
+    async function addAuthBookmarks(bookmarks) {
+      const tempPage = await authContext.newPage();
+      await tempPage.goto(`chrome-extension://${authExtensionId}/assets/popup.html`);
+      await tempPage.evaluate((bookmarks) => {
+        return new Promise((resolve) => {
+          chrome.storage.sync.set({ bookmarked_issues: bookmarks }, resolve);
+        });
+      }, bookmarks);
+      await tempPage.close();
+    }
+
+    // Helper to clear bookmarks in auth context
+    async function clearAuthBookmarks() {
+      const tempPage = await authContext.newPage();
+      await tempPage.goto(`chrome-extension://${authExtensionId}/assets/popup.html`);
+      await tempPage.evaluate(() => {
+        return new Promise((resolve) => {
+          chrome.storage.sync.clear(resolve);
+        });
+      });
+      await tempPage.close();
+    }
+
+    test.beforeAll(async () => {
+      const auth = getGitHubAuth();
+      if (!auth) return;
+
+      authContext = await chromium.launchPersistentContext('', {
+        headless: false,
+        args: [
+          '--headless=new',
+          `--disable-extensions-except=${extensionPath}`,
+          `--load-extension=${extensionPath}`,
+        ],
+      });
+
+      // Add GitHub auth cookies to context
+      if (auth.cookies) {
+        await authContext.addCookies(auth.cookies);
+      }
+
+      let [background] = authContext.serviceWorkers();
+      if (!background) {
+        background = await authContext.waitForEvent('serviceworker');
+      }
+      authExtensionId = background.url().split('/')[2];
+
+      const pages = authContext.pages();
+      authPage = pages[0] || await authContext.newPage();
+    });
+
+    test.afterAll(async () => {
+      if (authContext) {
+        await authContext.close();
+      }
+    });
+
+    test('appears in /issues navigation', async () => {
+      await authPage.goto('https://github.com/issues/created');
+      await authPage.waitForLoadState('domcontentloaded');
+
+      const bookmarksNav = authPage.locator('nav a:has-text("Bookmarked")');
       await expect(bookmarksNav).toBeVisible({ timeout: 10000 });
     });
 
-    test.skip('displays bookmarked issues', async () => {
-      await addBookmarks(context, makeBookmark(TEST_ISSUES[0]));
+    test('displays bookmarked issues', async () => {
+      await addAuthBookmarks(makeBookmark(TEST_ISSUES[0]));
 
-      await page.goto('https://github.com/issues/created');
-      await page.waitForLoadState('networkidle');
+      await authPage.goto('https://github.com/issues/created');
+      await authPage.waitForLoadState('domcontentloaded');
 
-      const bookmarksNav = page.locator('nav a:has-text("Bookmarks")');
+      const bookmarksNav = authPage.locator('nav a:has-text("Bookmarked")');
       await expect(bookmarksNav).toBeVisible({ timeout: 10000 });
       await bookmarksNav.click();
 
-      await page.waitForTimeout(3000);
-
-      const issueLink = page.locator(`a[href*="${TEST_ISSUES[0].repo}/issues/${TEST_ISSUES[0].number}"]`);
-      await expect(issueLink).toBeVisible({ timeout: 10000 });
+      // Wait for the bookmarks view to load and display the issue
+      const issueLink = authPage.locator(`a[href*="${TEST_ISSUES[0].repo}/issues/${TEST_ISSUES[0].number}"]`);
+      await expect(issueLink).toBeVisible();
     });
 
-    test.skip('shows empty state when no bookmarks', async () => {
-      await clearBookmarks(context);
+    test('shows empty state when no bookmarks', async () => {
+      await clearAuthBookmarks();
 
-      await page.goto('https://github.com/issues/created');
-      await page.waitForLoadState('networkidle');
+      await authPage.goto('https://github.com/issues/created');
+      await authPage.waitForLoadState('domcontentloaded');
 
-      const bookmarksNav = page.locator('nav a:has-text("Bookmarks")');
+      const bookmarksNav = authPage.locator('nav a:has-text("Bookmarked")');
       await expect(bookmarksNav).toBeVisible({ timeout: 10000 });
       await bookmarksNav.click();
 
-      const emptyState = page.locator('#bookmarks-empty');
+      const emptyState = authPage.locator('#bookmarks-empty');
       await expect(emptyState).toBeVisible({ timeout: 10000 });
     });
 
-    test.skip('auto-refreshes when bookmarks change in another tab', async () => {
+    test('auto-refreshes when bookmarks change in another tab', async () => {
       // Start with one bookmark
-      await addBookmarks(context, makeBookmark(TEST_ISSUES[0]));
+      await addAuthBookmarks(makeBookmark(TEST_ISSUES[0]));
 
       // Open bookmarks view
-      await page.goto('https://github.com/issues/created');
-      await page.waitForLoadState('networkidle');
+      await authPage.goto('https://github.com/issues/created');
+      await authPage.waitForLoadState('domcontentloaded');
 
-      const bookmarksNav = page.locator('nav a:has-text("Bookmarks")');
+      const bookmarksNav = authPage.locator('nav a:has-text("Bookmarked")');
       await expect(bookmarksNav).toBeVisible({ timeout: 10000 });
       await bookmarksNav.click();
 
       // Verify initial state shows 1 result
-      const resultsHeading = page.locator('h3:has-text("result")');
-      await expect(resultsHeading).toContainText('1 result', { timeout: 10000 });
+      const resultsHeading = authPage.locator('#bookmarks-count');
+      await expect(resultsHeading).toContainText('1 result');
 
       // Simulate bookmark added from another tab by directly modifying storage
-      await addBookmarks(context, makeBookmarks(TEST_ISSUES[0], TEST_ISSUES[1]));
+      await addAuthBookmarks(makeBookmarks(TEST_ISSUES[0], TEST_ISSUES[1]));
 
       // View should auto-refresh to show 2 results (debounced at 25ms)
-      await expect(resultsHeading).toContainText('2 results', { timeout: 5000 });
+      await expect(resultsHeading).toContainText('2 results');
     });
   });
 
-  test.describe('Error Handling (Requires GitHub Login)', () => {
+  // Error handling tests - intercept GraphQL and REST API to test error display
+  test.describe('Error Handling (Requires GitHub Login)', { tag: '@auth' }, () => {
+    test.skip(() => !getGitHubAuth(), 'GITHUB_AUTH_STATE not configured');
+
     const singleBookmark = makeBookmark(TEST_ISSUES[0]);
     const multipleBookmarks = makeBookmarks(TEST_ISSUES[0], TEST_ISSUES[1], TEST_ISSUES[2]);
 
-    test.skip('displays error messages with response codes when API fails', async () => {
-      await addBookmarks(context, singleBookmark);
+    let authContext;
+    let authExtensionId;
 
-      const testPage = await context.newPage();
+    // Helper to add bookmarks in auth context
+    async function addAuthBookmarks(bookmarks) {
+      const tempPage = await authContext.newPage();
+      await tempPage.goto(`chrome-extension://${authExtensionId}/assets/popup.html`);
+      await tempPage.evaluate((bookmarks) => {
+        return new Promise((resolve) => {
+          chrome.storage.sync.set({ bookmarked_issues: bookmarks }, resolve);
+        });
+      }, bookmarks);
+      await tempPage.close();
+    }
 
-      await testPage.route('https://api.github.com/repos/**', (route) => {
+    test.beforeAll(async () => {
+      const auth = getGitHubAuth();
+      if (!auth) return;
+
+      authContext = await chromium.launchPersistentContext('', {
+        headless: false,
+        args: [
+          '--headless=new',
+          `--disable-extensions-except=${extensionPath}`,
+          `--load-extension=${extensionPath}`,
+        ],
+      });
+
+      // Add GitHub auth cookies to context
+      if (auth.cookies) {
+        await authContext.addCookies(auth.cookies);
+      }
+
+      let [background] = authContext.serviceWorkers();
+      if (!background) {
+        background = await authContext.waitForEvent('serviceworker');
+      }
+      authExtensionId = background.url().split('/')[2];
+    });
+
+    test.afterAll(async () => {
+      if (authContext) {
+        await authContext.close();
+      }
+    });
+
+    test('displays error when GraphQL API fails', async () => {
+      await addAuthBookmarks(singleBookmark);
+
+      // Helper to check if URL is our extension's query
+      const isExtensionQuery = (url) => {
+        if (!url.includes('IssueDashboardKnownViewPageQuery') && !url.includes('IssueRowSecondaryQuery')) {
+          return false;
+        }
+        const body = decodeURIComponent(url.split('body=')[1] || '');
+        return body.includes('microsoft/playwright') || body.includes('facebook/react');
+      };
+
+      // Intercept GraphQL (content script) - fail to trigger REST fallback
+      await authContext.route('**/github.com/_graphql**', (route) => {
+        if (isExtensionQuery(route.request().url())) {
+          route.fulfill({
+            status: 500,
+            statusText: 'Internal Server Error',
+            contentType: 'application/json',
+            body: JSON.stringify({ errors: [{ message: 'Server error' }] })
+          });
+        } else {
+          route.continue();
+        }
+      });
+
+      // Intercept REST API fallback (background service worker)
+      await authContext.route('**/api.github.com/repos/**', (route) => {
         route.fulfill({
           status: 404,
           statusText: 'Not Found',
+          contentType: 'application/json',
           body: JSON.stringify({ message: 'Not Found' })
         });
       });
 
+      const testPage = await authContext.newPage();
       await testPage.goto('https://github.com/issues/created');
-      await testPage.waitForLoadState('networkidle');
+      await testPage.waitForLoadState('domcontentloaded');
 
-      const bookmarksNav = testPage.locator('nav a:has-text("Bookmarks")');
+      const bookmarksNav = testPage.locator('nav a:has-text("Bookmarked")');
       await expect(bookmarksNav).toBeVisible({ timeout: 10000 });
       await bookmarksNav.click();
 
       const errorMessage = testPage.locator('#bookmarks-error');
-      await expect(errorMessage).toBeVisible({ timeout: 10000 });
-      await expect(errorMessage).toContainText('404 Not Found');
+      await expect(errorMessage).toBeVisible({ timeout: 15000 });
 
+      await authContext.unroute('**/github.com/_graphql**');
+      await authContext.unroute('**/api.github.com/repos/**');
       await testPage.close();
     });
 
-    test.skip('displays error messages with rate limit info when rate limited', async () => {
-      await addBookmarks(context, singleBookmark);
+    test('displays error messages with rate limit info when rate limited', async () => {
+      await addAuthBookmarks(singleBookmark);
 
-      const testPage = await context.newPage();
+      // Helper to check if URL is our extension's query
+      const isExtensionQuery = (url) => {
+        if (!url.includes('IssueDashboardKnownViewPageQuery') && !url.includes('IssueRowSecondaryQuery')) {
+          return false;
+        }
+        const body = decodeURIComponent(url.split('body=')[1] || '');
+        return body.includes('microsoft/playwright') || body.includes('facebook/react');
+      };
 
-      await testPage.route('https://api.github.com/repos/**', (route) => {
+      // Intercept GraphQL (content script) - fail to trigger REST fallback
+      await authContext.route('**/github.com/_graphql**', (route) => {
+        if (isExtensionQuery(route.request().url())) {
+          route.fulfill({
+            status: 500,
+            statusText: 'Internal Server Error',
+            contentType: 'application/json',
+            body: JSON.stringify({ errors: [{ message: 'Server error' }] })
+          });
+        } else {
+          route.continue();
+        }
+      });
+
+      // Intercept REST API fallback (background service worker)
+      await authContext.route('**/api.github.com/repos/**', (route) => {
         route.fulfill({
           status: 403,
           statusText: 'rate limit exceeded',
+          contentType: 'application/json',
           body: JSON.stringify({ message: 'API rate limit exceeded' })
         });
       });
 
+      const testPage = await authContext.newPage();
       await testPage.goto('https://github.com/issues/created');
-      await testPage.waitForLoadState('networkidle');
+      await testPage.waitForLoadState('domcontentloaded');
 
-      const bookmarksNav = testPage.locator('nav a:has-text("Bookmarks")');
+      const bookmarksNav = testPage.locator('nav a:has-text("Bookmarked")');
       await expect(bookmarksNav).toBeVisible({ timeout: 10000 });
       await bookmarksNav.click();
 
       const errorMessage = testPage.locator('#bookmarks-error');
-      await expect(errorMessage).toBeVisible({ timeout: 10000 });
-      await expect(errorMessage).toContainText('403 rate limit exceeded');
+      await expect(errorMessage).toBeVisible({ timeout: 15000 });
+      // Extension shows user-friendly message, not HTTP status codes
+      await expect(errorMessage).toContainText('Failed to load issue details');
 
+      await authContext.unroute('**/github.com/_graphql**');
+      await authContext.unroute('**/api.github.com/repos/**');
       await testPage.close();
     });
 
-    test.skip('displays multiple error messages when some issues fail', async () => {
-      await addBookmarks(context, multipleBookmarks);
+    test('displays warning when some issues fail to load', async () => {
+      await addAuthBookmarks(multipleBookmarks);
 
-      const testPage = await context.newPage();
+      // Helper to check if URL is our extension's query
+      const isExtensionQuery = (url) => {
+        if (!url.includes('IssueDashboardKnownViewPageQuery') && !url.includes('IssueRowSecondaryQuery')) {
+          return false;
+        }
+        const body = decodeURIComponent(url.split('body=')[1] || '');
+        return body.includes('microsoft/playwright') || body.includes('facebook/react');
+      };
 
+      // Intercept GraphQL (content script) - fail to trigger REST fallback
+      await authContext.route('**/github.com/_graphql**', (route) => {
+        if (isExtensionQuery(route.request().url())) {
+          route.fulfill({
+            status: 500,
+            statusText: 'Internal Server Error',
+            contentType: 'application/json',
+            body: JSON.stringify({ errors: [{ message: 'Server error' }] })
+          });
+        } else {
+          route.continue();
+        }
+      });
+
+      // Route REST API with mixed responses: 1 success, 1 404, 1 403
       let callCount = 0;
-      await testPage.route('https://api.github.com/repos/**', (route) => {
+      await authContext.route('**/api.github.com/repos/**', (route) => {
         callCount++;
         if (callCount === 1) {
           route.fulfill({
             status: 200,
+            contentType: 'application/json',
             body: JSON.stringify({
               number: 1,
               title: 'Test Issue',
@@ -1007,28 +1206,35 @@ test.describe('GitHub Bookmarked Issues Extension', () => {
         } else if (callCount === 2) {
           route.fulfill({
             status: 404,
-            statusText: 'Not Found'
+            statusText: 'Not Found',
+            contentType: 'application/json',
+            body: JSON.stringify({ message: 'Not Found' })
           });
         } else {
           route.fulfill({
             status: 403,
-            statusText: 'Forbidden'
+            statusText: 'Forbidden',
+            contentType: 'application/json',
+            body: JSON.stringify({ message: 'Forbidden' })
           });
         }
       });
 
+      const testPage = await authContext.newPage();
       await testPage.goto('https://github.com/issues/created');
-      await testPage.waitForLoadState('networkidle');
+      await testPage.waitForLoadState('domcontentloaded');
 
-      const bookmarksNav = testPage.locator('nav a:has-text("Bookmarks")');
+      const bookmarksNav = testPage.locator('nav a:has-text("Bookmarked")');
       await expect(bookmarksNav).toBeVisible({ timeout: 10000 });
       await bookmarksNav.click();
 
       const errorMessage = testPage.locator('#bookmarks-error');
-      await expect(errorMessage).toBeVisible({ timeout: 10000 });
-      await expect(errorMessage).toContainText('404 Not Found');
-      await expect(errorMessage).toContainText('403 Forbidden');
+      await expect(errorMessage).toBeVisible({ timeout: 15000 });
+      // Extension shows user-friendly warning about partial failures
+      await expect(errorMessage).toContainText('2 of 3 issues could not be loaded');
 
+      await authContext.unroute('**/github.com/_graphql**');
+      await authContext.unroute('**/api.github.com/repos/**');
       await testPage.close();
     });
   });

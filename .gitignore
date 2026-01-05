@@ -10,3 +10,6 @@ playwright-report/
 
 # OS files
 .DS_Store
+
+# Environment variables (may contain GitHub session credentials)
+.env
