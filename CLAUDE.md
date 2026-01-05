@@ -136,6 +136,26 @@ The extension uses Manifest V3, which has strict Content Security Policy (CSP) r
 - **No inline scripts** - Inline `<script>` tags are blocked
 - **Solution**: Bundle dependencies locally and use ES modules
 
+## CSS vs JavaScript Loading: CDN vs Bundled
+
+| Dependency                    | Type       | Loading     | Reason                          |
+|-------------------------------|------------|-------------|---------------------------------|
+| @primer/css                   | CSS        | CDN (unpkg) | CSP allows external stylesheets |
+| @github/relative-time-element | JavaScript | Bundled     | CSP blocks external scripts     |
+
+Why the difference? Manifest V3's CSP treats styles and scripts differently:
+- `script-src 'self'`: Blocks external JavaScript (CDN scripts rejected)
+- `style-src`: Allows external stylesheets by default
+
+Why not bundle Primer CSS too?
+- ~300KB size increase to extension package
+- CDN provides caching benefits
+- CDN loading is allowed and works fine
+
+Content script note: Content scripts create `<relative-time>` elements that work because
+GitHub's pages already load this web component. The extension only bundles it for
+extension pages (popup/options).
+
 ## Bundled Dependencies Pattern
 
 External libraries are managed via npm and bundled during build:

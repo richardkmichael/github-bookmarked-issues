@@ -36,6 +36,18 @@ See [GITHUB_OPERATION.md](GITHUB_OPERATION.md) for detailed technical documentat
 
 ## Development
 
+### Dependencies
+
+| Dependency                     | Type | Loading     | Reason                                          |
+|--------------------------------|------|-------------|-------------------------------------------------|
+| @primer/css                    | CSS  | CDN (unpkg) | CSP allows external stylesheets                 |
+| @github/relative-time-element  | JS   | Bundled     | CSP `script-src 'self'` blocks external scripts |
+
+Manifest V3's Content Security Policy blocks external JavaScript but allows external CSS.
+The build script copies JS dependencies from `node_modules/` to `build/<browser>/assets/vendor/`.
+
+### Build
+
 `npm run build`, then load code from:
 
 - build/chrome/
