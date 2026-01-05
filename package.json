@@ -23,8 +23,8 @@
     "@github/relative-time-element": "5.0.0"
   },
   "devDependencies": {
-    "@playwright/test": "^1.48.0",
+    "@playwright/test": "^1.57.0",
     "chokidar": "^5.0.0",
-    "web-ext": "^8.3.0"
+    "web-ext": "^9.0.0"
   }
 }
