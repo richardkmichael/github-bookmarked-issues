@@ -383,6 +383,12 @@ Due to the Sec-Fetch-Site restriction, extension components have different capab
 | Popup          | ✗ No               | ✓ Yes          | Toolbar popup (rate-limited)        |
 | Background     | ✗ No               | ✓ Yes          | API proxy for content scripts       |
 
+Why REST API calls route through the background worker:
+- **PAT token access**: Stored in `browser.storage.sync`, only accessible from background
+- **CORS handling**: `api.github.com` is cross-origin from content scripts
+- **Centralized caching**: Fallback to cached data on rate limit (403)
+- **Rate limit tracking**: Response headers logged for debugging
+
 This creates an architectural asymmetry:
 - The bookmarks view (content script) can use efficient batch GraphQL queries
 - The popup must use REST API (60/hour unauthenticated, 5,000/hour with PAT)

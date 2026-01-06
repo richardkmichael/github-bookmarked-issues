@@ -3,6 +3,8 @@
 This is a browser extension to add a custom Bookmarks view to the collection of GitHub built-in
 views at: `github.com/issues`
 
+The GitHub repo is: richardkmichael/github-bookmarked-issues
+
 # Implementation
 
 The github.com/issues page has GitHub built-in views as a React app:
@@ -341,3 +343,71 @@ template.innerHTML = '<svg aria-hidden="true" viewBox="0 0 16 16"><path d="M3 2.
 3. **textContent auto-escapes**: No need for `escapeHtml()` helpers
 4. **Zero warnings**: This approach eliminates all web-ext linter warnings
 5. **Readable code**: Templates keep HTML structure visible and maintainable
+
+# Researching Primer CSS
+
+## Caching Primer Source
+
+To avoid repeatedly downloading Primer CSS when searching for class names or patterns:
+
+1. Check if already cached: `ls tmp/primer-css/`
+2. If not cached, download once:
+   ```bash
+   mkdir -p tmp && cd tmp
+   npm pack @primer/css && tar -xzf primer-css-*.tgz && mv package primer-css
+   ```
+3. Search the cached source: `grep -r "pattern" tmp/primer-css/`
+
+## Primer View Components
+
+Between Primer v21 and v22, components were extracted from main Primer to separate packages like
+`primer_view_components`. When implementing UI elements that match GitHub's style:
+
+1. First inspect the live GitHub page to see actual class names
+2. Search Primer CSS for the class patterns
+3. If not found, check `primer_view_components` or other Primer-related packages
+4. Example: Label classes were found by reviewing the label view component implementation
+
+# Development Commands
+
+## Reloading the Extension
+
+After code changes:
+
+Chrome:
+1. `npm run build:chrome`
+2. Go to `chrome://extensions`
+3. Click the refresh icon on the extension card
+
+Firefox:
+1. `npm run build:firefox` (or just reload if using symlink method)
+2. Go to `about:debugging#/runtime/this-firefox`
+3. Click "Reload" on the extension
+
+With watch mode (`npm run dev:watch`), step 1 is automatic - just reload in the browser.
+
+## Reading Extension Errors
+
+Chrome:
+- `chrome://extensions` → Click "Errors" on the extension card
+- Or: Click "Inspect views service worker" → Console tab
+
+Firefox:
+- `about:debugging#/runtime/this-firefox` → Click "Inspect" on the extension
+- Console tab shows errors from background script
+
+Content script errors appear in the page's DevTools console (F12 on github.com).
+
+# MCP Chrome DevTools
+
+The `chrome-devtools` MCP server connects to Chrome Canary for automated browser control.
+
+## Handle chrome-devtools MCP server error
+
+When any chrome-devtools tool returns this error:
+
+```
+Error: Could not connect to Chrome. Check if Chrome is running and remote debugging is enabled by going to chrome://inspect/#remote-debugging.
+```
+
+Start Chrome manually with: `./chrome-canary.sh --start`
