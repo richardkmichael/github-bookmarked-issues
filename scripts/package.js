@@ -22,10 +22,10 @@ async function packageExtension() {
   // Create bundle directory
   await fs.mkdir(bundleDir, { recursive: true });
 
-  // Read version from manifest
+  // Read version from manifest (prefer version_name for dev builds)
   const manifestContent = await fs.readFile(manifestPath, 'utf8');
   const manifest = JSON.parse(manifestContent);
-  const version = manifest.version;
+  const version = manifest.version_name || manifest.version;
 
   const packageName = `github-bookmarked-issues-${version}`;
 
