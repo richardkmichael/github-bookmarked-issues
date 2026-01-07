@@ -13,7 +13,10 @@ concurrency:
 
 jobs:
   test:
-    runs-on: macos-latest
+    strategy:
+      matrix:
+        os: [macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 15
 
     steps:
@@ -28,10 +31,8 @@ jobs:
 
       - name: Log environment versions
         run: |
-          echo "macOS: $(sw_vers -productVersion)"
+          echo "OS: ${{ matrix.os }}"
           echo "Node: $(node --version)"
-          echo "Chrome: $(/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --version)"
-          echo "Firefox: $(/Applications/Firefox.app/Contents/MacOS/firefox --version)"
 
       - name: Install dependencies
         run: npm ci
@@ -40,8 +41,8 @@ jobs:
         id: playwright-cache
         uses: actions/cache@v4
         with:
-          path: ~/Library/Caches/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          path: ${{ matrix.os == 'macos-latest' && '~/Library/Caches/ms-playwright' || '~/.cache/ms-playwright' }}
+          key: playwright-${{ matrix.os }}-${{ hashFiles('package-lock.json') }}
 
       - name: Install Playwright browsers
         if: steps.playwright-cache.outputs.cache-hit != 'true'
@@ -62,7 +63,7 @@ jobs:
       - name: Upload Chrome extension
         uses: actions/upload-artifact@v4
         with:
-          name: chrome-extension
+          name: chrome-extension-${{ matrix.os }}
           path: build/bundle/*.zip
           retention-days: 7
 
@@ -70,7 +71,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: playwright-report
+          name: playwright-report-${{ matrix.os }}
           path: playwright-report/
           retention-days: 7
 
@@ -78,7 +79,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: test-results
+          name: test-results-${{ matrix.os }}
           path: test-results/
           retention-days: 7
           if-no-files-found: ignore
