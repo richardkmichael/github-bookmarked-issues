@@ -262,10 +262,8 @@ test.describe('', () => {
       const issue = TEST_ISSUES[0];
       await addBookmarks(context, makeBookmark(issue));
 
-      const popupPage = await context.newPage();
-
-      // Mock API to avoid rate limits and ensure test stability
-      await popupPage.route('**/api.github.com/repos/**', async (route) => {
+      // Mock API at context level - requests come from service worker, not page
+      await context.route('**/api.github.com/repos/**', async (route) => {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
@@ -280,11 +278,13 @@ test.describe('', () => {
         });
       });
 
+      const popupPage = await context.newPage();
       await popupPage.goto(`chrome-extension://${extensionId}/assets/popup.html`);
 
       const issueItem = popupPage.locator('.issue-item');
       await expect(issueItem).toBeVisible({ timeout: 10000 });
 
+      await context.unroute('**/api.github.com/repos/**');
       await popupPage.close();
     });
 
@@ -293,10 +293,8 @@ test.describe('', () => {
       const bookmarkKey = `${issue.owner}/${issue.repo}/issues/${issue.number}`;
       await addBookmarks(context, makeBookmark(issue));
 
-      const popupPage = await context.newPage();
-
-      // Mock API to avoid rate limits and ensure test stability
-      await popupPage.route('**/api.github.com/repos/**', async (route) => {
+      // Mock API at context level - requests come from service worker, not page
+      await context.route('**/api.github.com/repos/**', async (route) => {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
@@ -311,6 +309,7 @@ test.describe('', () => {
         });
       });
 
+      const popupPage = await context.newPage();
       await popupPage.goto(`chrome-extension://${extensionId}/assets/popup.html`);
 
       const issueItem = popupPage.locator('.issue-item');
@@ -325,6 +324,7 @@ test.describe('', () => {
       const bookmarks = await getBookmarks(context);
       expect(Object.keys(bookmarks)).not.toContain(bookmarkKey);
 
+      await context.unroute('**/api.github.com/repos/**');
       await popupPage.close();
     });
 
@@ -778,10 +778,8 @@ test.describe('', () => {
         ...makeBookmark(issue2, Date.now() - 86400000)
       });
 
-      const popupPage = await context.newPage();
-
-      // Mock API for visual stability - consistent titles/states for screenshot comparison
-      await popupPage.route('**/api.github.com/repos/**', async (route) => {
+      // Mock API at context level - requests come from service worker, not page
+      await context.route('**/api.github.com/repos/**', async (route) => {
         const url = route.request().url();
         let data = {
           title: 'Sample Issue',
@@ -809,11 +807,13 @@ test.describe('', () => {
         });
       });
 
+      const popupPage = await context.newPage();
       await popupPage.goto(`chrome-extension://${extensionId}/assets/popup.html`);
       await popupPage.waitForSelector('.issue-item');
       await popupPage.waitForTimeout(500);
 
       await expect(popupPage).toHaveScreenshot('popup-with-issues.png');
+      await context.unroute('**/api.github.com/repos/**');
       await popupPage.close();
     });
 
