@@ -35,7 +35,12 @@ async function packageExtension() {
     const zipPath = path.join(bundleDir, zipFile);
     console.log(`Creating Chrome package: ${zipFile}...`);
 
-    execSync(`zip -r "${zipPath}" . -x "*.zip"`, {
+    const isWindows = process.platform === 'win32';
+    const cmd = isWindows
+      ? `powershell -Command "Compress-Archive -Path '.\\*' -DestinationPath '${zipPath}' -Force"`
+      : `zip -r "${zipPath}" . -x "*.zip"`;
+
+    execSync(cmd, {
       cwd: buildDir,
       stdio: 'inherit'
     });
