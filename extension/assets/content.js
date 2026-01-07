@@ -157,23 +157,26 @@ if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
 
   // Create and insert bookmark button
   async function insertBookmarkButton() {
+    const timestamp = performance.now().toFixed(1);
     const issueData = getIssueData();
     if (!issueData) {
-      console.log('[GitHub Bookmarked Issues] Not on an issue page');
+      console.log(`[GitHub Bookmarked Issues] [${timestamp}ms] Not on an issue page`);
       return;
     }
 
     const actionsContainer = document.querySelector(HEADER_ACTIONS_SELECTOR);
     if (!actionsContainer) {
-      console.log('[GitHub Bookmarked Issues] Header actions not found');
+      console.log(`[GitHub Bookmarked Issues] [${timestamp}ms] Header actions not found, selector: ${HEADER_ACTIONS_SELECTOR}`);
       return;
     }
 
     // Check if button already exists
     if (document.querySelector(`[${BOOKMARK_BUTTON_ATTR}]`)) {
-      console.log('[GitHub Bookmarked Issues] Bookmark button already exists');
+      console.log(`[GitHub Bookmarked Issues] [${timestamp}ms] Bookmark button already exists`);
       return;
     }
+
+    console.log(`[GitHub Bookmarked Issues] [${timestamp}ms] Creating button, container children: ${actionsContainer.children.length}`);
 
     // Create bookmark button
     const bookmarkButton = document.createElement('button');
@@ -209,7 +212,18 @@ if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
     // Insert as last child in header actions
     actionsContainer.appendChild(bookmarkButton);
 
-    console.log('[GitHub Bookmarked Issues] Bookmark button added');
+    const insertTimestamp = performance.now().toFixed(1);
+    console.log(`[GitHub Bookmarked Issues] [${insertTimestamp}ms] Bookmark button added to DOM, parent: ${actionsContainer.className}`);
+
+    // Debug: watch for button removal (helps diagnose timing issues)
+    const removalObserver = new MutationObserver(() => {
+      if (!document.querySelector(`[${BOOKMARK_BUTTON_ATTR}]`)) {
+        const removeTimestamp = performance.now().toFixed(1);
+        console.log(`[GitHub Bookmarked Issues] [${removeTimestamp}ms] Button was REMOVED from DOM`);
+        removalObserver.disconnect();
+      }
+    });
+    removalObserver.observe(actionsContainer.parentElement || document.body, { childList: true, subtree: true });
   }
 
   // Track current URL to detect navigation
@@ -260,7 +274,8 @@ if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
 
   // Initialize when page loads
   function init() {
-    console.log(`[GitHub Bookmarked Issues] init() readyState: ${document.readyState}`);
+    const timestamp = performance.now().toFixed(1);
+    console.log(`[GitHub Bookmarked Issues] [${timestamp}ms] init() readyState: ${document.readyState}, URL: ${location.pathname}`);
     setupIconTemplates();
 
     // Initial button insertion
