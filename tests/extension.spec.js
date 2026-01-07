@@ -140,7 +140,11 @@ test.describe('', () => {
     test('GitHub API contract', async () => {
       const issue = TEST_ISSUES[0];
       const url = `https://api.github.com/repos/${issue.owner}/${issue.repo}/issues/${issue.number}`;
-      const response = await fetch(url);
+      const headers = {};
+      if (process.env.API_CONTRACT_TEST_PAT) {
+        headers['Authorization'] = `Bearer ${process.env.API_CONTRACT_TEST_PAT}`;
+      }
+      const response = await fetch(url, { headers });
       expect(response.ok).toBe(true);
 
       const data = await response.json();

@@ -56,6 +56,8 @@ jobs:
 
       - name: Run tests
         run: npm test
+        env:
+          API_CONTRACT_TEST_PAT: ${{ secrets.API_CONTRACT_TEST_PAT }}
 
       - name: Upload Chrome extension
         uses: actions/upload-artifact@v4
