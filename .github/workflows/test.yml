@@ -55,7 +55,7 @@ jobs:
         run: npm run build:chrome
 
       - name: Run tests
-        run: npm test -- --reporter=list
+        run: npm test
 
       - name: Upload Chrome extension
         uses: actions/upload-artifact@v4

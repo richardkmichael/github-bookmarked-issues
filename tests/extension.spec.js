@@ -134,6 +134,24 @@ test.describe('', () => {
       expect(extensionId).toBeTruthy();
     });
 
+    // Contract test: verify GitHub API returns all fields we depend on.
+    // If this fails, our mocks need updating to match API changes.
+    // Note: API doesn't return repository.full_name - popup.js parses from url field instead.
+    test('GitHub API contract', async () => {
+      const issue = TEST_ISSUES[0];
+      const url = `https://api.github.com/repos/${issue.owner}/${issue.repo}/issues/${issue.number}`;
+      const response = await fetch(url);
+      expect(response.ok).toBe(true);
+
+      const data = await response.json();
+      expect(data).toHaveProperty('title');
+      expect(data).toHaveProperty('state');
+      expect(data).toHaveProperty('html_url');
+      expect(data).toHaveProperty('updated_at');
+      expect(data).toHaveProperty('comments');
+      expect(data).toHaveProperty('url');  // Used by popup.js to parse repo name
+    });
+
     test('bookmark button', async () => {
       const bookmarkSelector = '[data-extension-bookmark]';
       const headerActionsSelector = '[data-component="PH_Actions"]';
@@ -241,21 +259,28 @@ test.describe('', () => {
     });
 
     test('displays bookmarked issues', async () => {
-      const testBookmarks = {
-        'microsoft/playwright/issues/1': {
-          owner: 'microsoft',
-          repo: 'playwright',
-          number: 1,
-          type: 'issues',
-          bookmarkedAt: Date.now()
-        }
-      };
-      await addBookmarks(context, testBookmarks);
+      const issue = TEST_ISSUES[0];
+      await addBookmarks(context, makeBookmark(issue));
 
       const popupPage = await context.newPage();
-      await popupPage.goto(`chrome-extension://${extensionId}/assets/popup.html`);
 
-      await popupPage.waitForTimeout(2000);
+      // Mock API to avoid rate limits and ensure test stability
+      await popupPage.route('**/api.github.com/repos/**', async (route) => {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            title: 'Test Issue',
+            state: 'open',
+            html_url: issueUrl(issue),
+            url: `https://api.github.com/repos/${issue.owner}/${issue.repo}/issues/${issue.number}`,
+            updated_at: '2024-01-15T10:30:00Z',
+            comments: 5
+          })
+        });
+      });
+
+      await popupPage.goto(`chrome-extension://${extensionId}/assets/popup.html`);
 
       const issueItem = popupPage.locator('.issue-item');
       await expect(issueItem).toBeVisible({ timeout: 10000 });
@@ -264,18 +289,28 @@ test.describe('', () => {
     });
 
     test('removes bookmark when remove button clicked', async () => {
-      const testBookmarks = {
-        'microsoft/playwright/issues/1': {
-          owner: 'microsoft',
-          repo: 'playwright',
-          number: 1,
-          type: 'issues',
-          bookmarkedAt: Date.now()
-        }
-      };
-      await addBookmarks(context, testBookmarks);
+      const issue = TEST_ISSUES[0];
+      const bookmarkKey = `${issue.owner}/${issue.repo}/issues/${issue.number}`;
+      await addBookmarks(context, makeBookmark(issue));
 
       const popupPage = await context.newPage();
+
+      // Mock API to avoid rate limits and ensure test stability
+      await popupPage.route('**/api.github.com/repos/**', async (route) => {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            title: 'Test Issue',
+            state: 'open',
+            html_url: issueUrl(issue),
+            url: `https://api.github.com/repos/${issue.owner}/${issue.repo}/issues/${issue.number}`,
+            updated_at: '2024-01-15T10:30:00Z',
+            comments: 5
+          })
+        });
+      });
+
       await popupPage.goto(`chrome-extension://${extensionId}/assets/popup.html`);
 
       const issueItem = popupPage.locator('.issue-item');
@@ -288,7 +323,7 @@ test.describe('', () => {
       await expect(issueItem).not.toBeVisible();
 
       const bookmarks = await getBookmarks(context);
-      expect(Object.keys(bookmarks)).not.toContain('microsoft/playwright/issues/1');
+      expect(Object.keys(bookmarks)).not.toContain(bookmarkKey);
 
       await popupPage.close();
     });
@@ -618,6 +653,7 @@ test.describe('', () => {
 
     test('token is used in API requests', async () => {
       const testToken = 'github_pat_11ABCDEFGHIJKLMNOPQRST_1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW';
+      const issue = TEST_ISSUES[0];
 
       // Store the token
       const setupPage = await context.newPage();
@@ -630,16 +666,7 @@ test.describe('', () => {
       await setupPage.close();
 
       // Add a bookmark
-      const testBookmarks = {
-        'microsoft/playwright/issues/999': {
-          owner: 'microsoft',
-          repo: 'playwright',
-          number: 999,
-          type: 'issues',
-          bookmarkedAt: Date.now()
-        }
-      };
-      await addBookmarks(context, testBookmarks);
+      await addBookmarks(context, makeBookmark(issue));
 
       // Track Authorization header from intercepted requests
       let capturedAuthHeader = null;
@@ -650,11 +677,11 @@ test.describe('', () => {
           status: 200,
           contentType: 'application/json',
           body: JSON.stringify({
-            id: 999,
-            number: 999,
+            number: issue.number,
             title: 'Test Issue',
             state: 'open',
-            html_url: 'https://github.com/microsoft/playwright/issues/999',
+            html_url: issueUrl(issue),
+            url: `https://api.github.com/repos/${issue.owner}/${issue.repo}/issues/${issue.number}`,
             updated_at: new Date().toISOString(),
             comments: 0
           })
@@ -685,6 +712,8 @@ test.describe('', () => {
     });
 
     test('requests work without token', async () => {
+      const issue = TEST_ISSUES[1];  // Use different issue from previous test
+
       // Ensure no token is set
       const setupPage = await context.newPage();
       await setupPage.goto(`chrome-extension://${extensionId}/assets/options.html`);
@@ -696,16 +725,7 @@ test.describe('', () => {
       await setupPage.close();
 
       // Add a bookmark
-      const testBookmarks = {
-        'microsoft/playwright/issues/888': {
-          owner: 'microsoft',
-          repo: 'playwright',
-          number: 888,
-          type: 'issues',
-          bookmarkedAt: Date.now()
-        }
-      };
-      await addBookmarks(context, testBookmarks);
+      await addBookmarks(context, makeBookmark(issue));
 
       // Track Authorization header
       let capturedAuthHeader = null;
@@ -715,11 +735,11 @@ test.describe('', () => {
           status: 200,
           contentType: 'application/json',
           body: JSON.stringify({
-            id: 888,
-            number: 888,
+            number: issue.number,
             title: 'Test Issue Without Token',
             state: 'open',
-            html_url: 'https://github.com/microsoft/playwright/issues/888',
+            html_url: issueUrl(issue),
+            url: `https://api.github.com/repos/${issue.owner}/${issue.repo}/issues/${issue.number}`,
             updated_at: new Date().toISOString(),
             comments: 0
           })
@@ -741,50 +761,44 @@ test.describe('', () => {
 
   // ============================================================
   // VISUAL REGRESSION - Screenshot comparison for CSS development
+  //
+  // These tests use mocked API responses for visual stability:
+  // - Ensures consistent issue titles, states, and timestamps in screenshots
+  // - Avoids rate limits that would cause flaky failures in CI
+  // - Contract test in Basics block verifies mocks match real API structure
   // ============================================================
 
   test.describe('Visual', { tag: '@visual' }, () => {
     test('popup with issues', async () => {
-      // Setup mock bookmarks
-      const testBookmarks = {
-        'microsoft/playwright/issues/123': {
-          owner: 'microsoft',
-          repo: 'playwright',
-          number: 123,
-          type: 'issues',
-          bookmarkedAt: Date.now()
-        },
-        'facebook/react/issues/456': {
-          owner: 'facebook',
-          repo: 'react',
-          number: 456,
-          type: 'issues',
-          bookmarkedAt: Date.now() - 86400000
-        }
-      };
-      await addBookmarks(context, testBookmarks);
+      // Use TEST_ISSUES for consistency, with different timestamps for visual variety
+      const issue1 = TEST_ISSUES[0];  // microsoft/playwright
+      const issue2 = TEST_ISSUES[2];  // facebook/react
+      await addBookmarks(context, {
+        ...makeBookmark(issue1),
+        ...makeBookmark(issue2, Date.now() - 86400000)
+      });
 
       const popupPage = await context.newPage();
 
-      // Mock API responses
+      // Mock API for visual stability - consistent titles/states for screenshot comparison
       await popupPage.route('**/api.github.com/repos/**', async (route) => {
         const url = route.request().url();
         let data = {
           title: 'Sample Issue',
           state: 'open',
-          html_url: url,
+          html_url: issueUrl(issue1),
+          url: url,
           updated_at: '2024-01-15T10:30:00Z',
-          comments: 5,
-          repository: { full_name: 'org/repo' }
+          comments: 5
         };
-        if (url.includes('playwright')) {
+        if (url.includes(issue1.repo)) {
           data.title = 'Add visual regression testing support';
-          data.repository.full_name = 'microsoft/playwright';
+          data.html_url = issueUrl(issue1);
           data.state = 'open';
           data.comments = 12;
-        } else if (url.includes('react')) {
+        } else if (url.includes(issue2.repo)) {
           data.title = 'Improve hydration performance';
-          data.repository.full_name = 'facebook/react';
+          data.html_url = issueUrl(issue2);
           data.state = 'closed';
           data.comments = 42;
         }
@@ -1186,6 +1200,7 @@ test.describe('', () => {
       });
 
       // Route REST API with mixed responses: 1 success, 1 404, 1 403
+      const successIssue = TEST_ISSUES[0];
       let callCount = 0;
       await authContext.route('**/api.github.com/repos/**', (route) => {
         callCount++;
@@ -1194,9 +1209,10 @@ test.describe('', () => {
             status: 200,
             contentType: 'application/json',
             body: JSON.stringify({
-              number: 1,
+              number: successIssue.number,
               title: 'Test Issue',
-              html_url: 'https://github.com/microsoft/playwright/issues/1',
+              html_url: issueUrl(successIssue),
+              url: `https://api.github.com/repos/${successIssue.owner}/${successIssue.repo}/issues/${successIssue.number}`,
               state: 'open',
               updated_at: new Date().toISOString(),
               comments: 0
