@@ -17,9 +17,9 @@ export default defineConfig({
   },
   expect: {
     toHaveScreenshot: {
-      // Balanced threshold: catch CSS issues while allowing rendering variance
-      // 0.5% catches missing button gaps (~8px) but tolerates font anti-aliasing
-      maxDiffPixelRatio: 0.005,
+      // 2% threshold: tolerates system font differences across platforms
+      // (macOS uses San Francisco, Linux uses Noto Sans/DejaVu)
+      maxDiffPixelRatio: 0.02,
       // Per-pixel threshold: allow slight color variance from anti-aliasing
       threshold: 0.2,
     },
