@@ -6,7 +6,8 @@
       "args": [
         "chrome-devtools-mcp@latest",
         "--autoConnect",
-        "--channel=canary"
+        "--channel=canary",
+        "--userDataDir=/Users/rmichael/.cache/chrome-devtools-mcp/chrome-profile-canary"
       ]
     }
   }
