@@ -55,7 +55,7 @@ function loadFixture(name) {
   return readFileSync(path.join(__dirname, 'fixtures', name), 'utf-8');
 }
 
-test.describe('GitHub Bookmarked Issues Extension', () => {
+test.describe('', () => {
   let context;
   let page;
   let extensionId;
@@ -129,17 +129,50 @@ test.describe('GitHub Bookmarked Issues Extension', () => {
   // NO LOGIN REQUIRED - Extension basics and public pages
   // ============================================================
 
-  test.describe('Extension Basics', () => {
+  test.describe('Basics', () => {
     test('loads successfully', async () => {
       expect(extensionId).toBeTruthy();
-      console.log('Extension ID:', extensionId);
+    });
+
+    test('bookmark button', async () => {
+      const bookmarkSelector = '[data-extension-bookmark]';
+      const headerActionsSelector = '[data-component="PH_Actions"]';
+
+      await clearBookmarks(context);
+
+      await page.goto(issueUrl(TEST_ISSUES[0]));
+      await page.waitForLoadState('domcontentloaded');
+
+      await expect(page.locator(headerActionsSelector)).toBeVisible({ timeout: 15000 });
+
+      const bookmarkButton = page.locator(bookmarkSelector);
+      await expect(bookmarkButton).toBeVisible({ timeout: 10000 });
+
+      // Click to add bookmark
+      await bookmarkButton.click();
+
+      // Verify bookmark was added to storage
+      const expectedKey = `${TEST_ISSUES[0].owner}/${TEST_ISSUES[0].repo}/issues/${TEST_ISSUES[0].number}`;
+      await expect(async () => {
+        const bookmarks = await getBookmarks(context);
+        expect(Object.keys(bookmarks)).toContain(expectedKey);
+      }).toPass({ timeout: 5000 });
+
+      // Click again to remove bookmark
+      await bookmarkButton.click();
+
+      // Verify bookmark was removed
+      await expect(async () => {
+        const bookmarks = await getBookmarks(context);
+        expect(Object.keys(bookmarks)).not.toContain(expectedKey);
+      }).toPass({ timeout: 5000 });
     });
   });
 
   // Bookmark button navigation tests - ensure button appears regardless of navigation path
   // NOTE: These tests can be flaky due to GitHub's variable page load times and React hydration.
   // Retries are enabled to mitigate transient failures.
-  test.describe('Bookmark Button Navigation', { tag: '@navigation' }, () => {
+  test.describe('Navigation', { tag: '@navigation' }, () => {
     test.describe.configure({ retries: 2 });
 
     const bookmarkSelector = '[data-extension-bookmark]';
@@ -195,52 +228,7 @@ test.describe('GitHub Bookmarked Issues Extension', () => {
       const bookmarkButton = page.locator(bookmarkSelector);
       await expect(bookmarkButton).toBeVisible({ timeout: 10000 });
     });
-  });
 
-  test.describe('Bookmark Button (Public Issue Pages)', () => {
-    const bookmarkSelector = '[data-extension-bookmark]';
-    const headerActionsSelector = '[data-component="PH_Actions"]';
-
-    test('appears on GitHub issue page', async () => {
-      await page.goto(issueUrl(TEST_ISSUES[0]));
-      await page.waitForLoadState('domcontentloaded');
-
-      await expect(page.locator(headerActionsSelector)).toBeVisible({ timeout: 15000 });
-
-      const bookmarkButton = page.locator(bookmarkSelector);
-      await expect(bookmarkButton).toBeVisible({ timeout: 10000 });
-    });
-
-    test('toggles bookmark on click', async () => {
-      await clearBookmarks(context);
-
-      await page.goto(issueUrl(TEST_ISSUES[0]));
-      await page.waitForLoadState('domcontentloaded');
-
-      await expect(page.locator(headerActionsSelector)).toBeVisible({ timeout: 15000 });
-
-      const bookmarkButton = page.locator(bookmarkSelector);
-      await expect(bookmarkButton).toBeVisible({ timeout: 10000 });
-
-      // Click to add bookmark
-      await bookmarkButton.click();
-
-      // Verify bookmark was added to storage
-      const expectedKey = `${TEST_ISSUES[0].owner}/${TEST_ISSUES[0].repo}/issues/${TEST_ISSUES[0].number}`;
-      await expect(async () => {
-        const bookmarks = await getBookmarks(context);
-        expect(Object.keys(bookmarks)).toContain(expectedKey);
-      }).toPass({ timeout: 5000 });
-
-      // Click again to remove bookmark
-      await bookmarkButton.click();
-
-      // Verify bookmark was removed
-      await expect(async () => {
-        const bookmarks = await getBookmarks(context);
-        expect(Object.keys(bookmarks)).not.toContain(expectedKey);
-      }).toPass({ timeout: 5000 });
-    });
   });
 
   test.describe('Popup', () => {
@@ -305,7 +293,7 @@ test.describe('GitHub Bookmarked Issues Extension', () => {
       await popupPage.close();
     });
 
-    test('imports from fixture and saves to storage', async () => {
+    test('imports and saves', async () => {
       await clearBookmarks(context);
 
       const popupPage = await context.newPage();
@@ -372,7 +360,7 @@ test.describe('GitHub Bookmarked Issues Extension', () => {
     });
   });
 
-  test.describe('Options Page', () => {
+  test.describe('Options', () => {
     test('opens and displays UI', async () => {
       const optionsPage = await context.newPage();
       await optionsPage.goto(`chrome-extension://${extensionId}/assets/options.html`);
@@ -755,7 +743,7 @@ test.describe('GitHub Bookmarked Issues Extension', () => {
   // VISUAL REGRESSION - Screenshot comparison for CSS development
   // ============================================================
 
-  test.describe('Visual Regression', { tag: '@visual' }, () => {
+  test.describe('Visual', { tag: '@visual' }, () => {
     test('popup with issues', async () => {
       // Setup mock bookmarks
       const testBookmarks = {
@@ -840,7 +828,7 @@ test.describe('GitHub Bookmarked Issues Extension', () => {
       await popupPage.close();
     });
 
-    test('options page default', async () => {
+    test('default state', async () => {
       const optionsPage = await context.newPage();
       await optionsPage.goto(`chrome-extension://${extensionId}/assets/options.html`);
       await optionsPage.evaluate(() => {
@@ -856,7 +844,7 @@ test.describe('GitHub Bookmarked Issues Extension', () => {
       await optionsPage.close();
     });
 
-    test('options page with token configured', async () => {
+    test('with token', async () => {
       const optionsPage = await context.newPage();
       await optionsPage.goto(`chrome-extension://${extensionId}/assets/options.html`);
       await optionsPage.evaluate(() => {
@@ -886,7 +874,7 @@ test.describe('GitHub Bookmarked Issues Extension', () => {
   // LOGIN REQUIRED - github.com/issues requires authentication
   // ============================================================
 
-  test.describe('Bookmarks View (Requires GitHub Login)', { tag: '@auth' }, () => {
+  test.describe('Bookmarked view', { tag: '@auth' }, () => {
     test.skip(() => !getGitHubAuth(), 'GITHUB_AUTH_STATE not configured');
 
     let authContext;
@@ -1013,7 +1001,7 @@ test.describe('GitHub Bookmarked Issues Extension', () => {
   });
 
   // Error handling tests - intercept GraphQL and REST API to test error display
-  test.describe('Error Handling (Requires GitHub Login)', { tag: '@auth' }, () => {
+  test.describe('Error Handling', { tag: '@auth' }, () => {
     test.skip(() => !getGitHubAuth(), 'GITHUB_AUTH_STATE not configured');
 
     const singleBookmark = makeBookmark(TEST_ISSUES[0]);

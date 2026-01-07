@@ -1,5 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
 
+// Prevent list reporter from truncating test names
+process.stdout.columns = 200;
+
 export default defineConfig({
   testDir: './tests',
   snapshotPathTemplate: '{snapshotDir}/{arg}{ext}',
@@ -8,7 +11,7 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: 1,
-  reporter: [['html', { open: 'never' }]],
+  reporter: [['list'], ['html', { open: 'never' }]],
   use: {
     trace: 'on-first-retry',
   },
