@@ -18,7 +18,7 @@ export default defineConfig({
   expect: {
     toHaveScreenshot: {
       // 2% threshold: tolerates system font differences across platforms
-      // (macOS uses San Francisco, Linux uses Noto Sans/DejaVu)
+      // (macOS: San Francisco, Linux: Noto Sans/DejaVu, Windows: Segoe UI)
       maxDiffPixelRatio: 0.02,
       // Per-pixel threshold: allow slight color variance from anti-aliasing
       threshold: 0.2,
