@@ -55,11 +55,18 @@ jobs:
         run: npm run build:chrome
 
       - name: Run tests
-        run: npm test
+        run: npm test -- --reporter=list
+
+      - name: Upload Chrome extension
+        uses: actions/upload-artifact@v4
+        with:
+          name: chrome-extension
+          path: build/bundle/*.zip
+          retention-days: 7
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v4
-        if: failure()
+        if: always()
         with:
           name: playwright-report
           path: playwright-report/
@@ -67,7 +74,7 @@ jobs:
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
-        if: failure()
+        if: always()
         with:
           name: test-results
           path: test-results/
@@ -95,3 +102,10 @@ jobs:
 
       - name: Lint extension
         run: npm run lint
+
+      - name: Upload Firefox extension
+        uses: actions/upload-artifact@v4
+        with:
+          name: firefox-extension
+          path: build/bundle/*.xpi
+          retention-days: 7
