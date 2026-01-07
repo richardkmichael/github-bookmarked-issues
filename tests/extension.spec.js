@@ -397,6 +397,46 @@ test.describe('', () => {
 
       await popupPage.close();
     });
+
+    test('copies all issues to clipboard', async () => {
+      const issue = TEST_ISSUES[0];
+      await addBookmarks(context, makeBookmark(issue));
+
+      await context.route('**/api.github.com/repos/**', async (route) => {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            title: 'Test Issue',
+            state: 'open',
+            html_url: issueUrl(issue),
+            url: `https://api.github.com/repos/${issue.owner}/${issue.repo}/issues/${issue.number}`,
+            updated_at: '2024-01-15T10:30:00Z',
+            comments: 5
+          })
+        });
+      });
+
+      const popupPage = await context.newPage();
+      await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+      await popupPage.goto(`chrome-extension://${extensionId}/assets/popup.html`);
+
+      await popupPage.waitForSelector('.issue-item');
+
+      const copyBtn = popupPage.locator('#copy-all-btn');
+      await copyBtn.click();
+
+      // Verify success feedback
+      await expect(copyBtn).toHaveClass(/success/);
+
+      // Verify clipboard content
+      const clipboardText = await popupPage.evaluate(() => navigator.clipboard.readText());
+      expect(clipboardText).toContain('Test Issue');
+      expect(clipboardText).toContain(`${issue.owner}/${issue.repo}/issues/${issue.number}`);
+
+      await context.unroute('**/api.github.com/repos/**');
+      await popupPage.close();
+    });
   });
 
   test.describe('Options', () => {
