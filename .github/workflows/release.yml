@@ -32,6 +32,8 @@ jobs:
 
       - name: Build extensions
         run: npm run build
+        env:
+          VERSION_TAG: ${{ github.ref_name }}
 
       - name: Create GitHub Release
         env:

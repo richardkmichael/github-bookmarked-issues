@@ -18,15 +18,21 @@ if (!browser || !['chrome', 'firefox'].includes(browser)) {
 const TARGET = path.join(ROOT, 'build', browser);
 
 function getVersionName(baseVersion) {
+  // Check for VERSION_TAG env var (set by CI for release builds)
+  const versionTag = process.env.VERSION_TAG;
+  if (versionTag) {
+    return versionTag.startsWith('v') ? versionTag.slice(1) : versionTag;
+  }
+
   try {
     // Get short commit hash
     const commitHash = execSync('git rev-parse --short HEAD', { cwd: ROOT, encoding: 'utf8' }).trim();
 
-    // Check if HEAD is tagged (production release)
+    // Check if HEAD is tagged (release build)
     try {
-      execSync('git describe --exact-match HEAD', { cwd: ROOT, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
-      // HEAD is tagged - production build, use base version
-      return baseVersion;
+      const tag = execSync('git describe --exact-match HEAD', { cwd: ROOT, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }).trim();
+      // HEAD is tagged - use tag name as version (strip 'v' prefix if present)
+      return tag.startsWith('v') ? tag.slice(1) : tag;
     } catch {
       // Not tagged - development build
     }

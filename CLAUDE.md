@@ -411,3 +411,12 @@ Error: Could not connect to Chrome. Check if Chrome is running and remote debugg
 ```
 
 Start Chrome manually with: `./chrome-canary.sh --start`
+
+# Release
+
+## Tags
+
+Releases use annotated, not lightweight, tags.  The annotated tag message is simply the tag name
+itself: `v1.0.0`, because the release notes explain the release content.
+
+Prerelease tags use `-rcX` notation, e.g., `v1.0.0-rc3`.
