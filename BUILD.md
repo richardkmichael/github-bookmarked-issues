@@ -29,8 +29,8 @@ npm run build
 
 ## Output Locations
 
-- Firefox XPI: `build/firefox/github-bookmarked-issues-{version}.xpi`
-- Chrome ZIP: `build/chrome/github-bookmarked-issues-{version}.zip`
+- Firefox XPI: `build/bundle/github-bookmarked-issues-{version}.xpi`
+- Chrome ZIP: `build/bundle/github-bookmarked-issues-{version}.zip`
 
 ## Build System Architecture
 
@@ -98,9 +98,7 @@ Our build system uses `web-ext` where appropriate (Firefox packaging/linting) wh
 
 ## Development Workflow
 
-### Option 1: Auto-rebuild with File Watcher (Recommended)
-
-Test both browsers simultaneously with automatic rebuilds on file changes:
+Use the file watcher for automatic rebuilds during development:
 
 ```bash
 # Terminal 1: Start file watcher
@@ -124,26 +122,6 @@ npm run dev:watch
 2. Watcher detects change and rebuilds (~2-3 seconds)
 3. Reload extension in browser to see changes
 
-### Option 2: Manual Development (Firefox only)
-
-Firefox can load directly from source without building:
-
-```bash
-# Create symlink to Firefox manifest
-ln -sf manifest-firefox.json extension/manifest.json
-
-# Load in Firefox
-# about:debugging → "Load Temporary Add-on" → select extension/manifest.json
-```
-
-**Note**: Chrome does not follow symlinks, so it always requires building. For Chrome development, use Option 1.
-
-### Making Changes (Manual mode)
-
-1. Edit files in `extension/` directory
-2. **Firefox**: Click "Reload" in `about:debugging` (no rebuild needed)
-3. **Chrome**: Run `npm run build:chrome` and reload extension
-
 ### Running Tests
 
 ```bash
@@ -152,6 +130,28 @@ npm run test:chrome   # Chrome-specific
 npm run test:visual   # Visual regression tests only
 npm run lint          # Lint Firefox build
 ```
+
+### Visual Regression Tests
+
+Visual tests compare screenshots against baseline images to detect unintended UI changes.
+
+- Baselines stored in `tests/screenshots/`
+- Tests tagged with `@visual` in test names
+- Tolerances: 2% pixel diff ratio, 0.2 per-pixel threshold (accounts for font rendering differences)
+
+```bash
+npm run test:visual          # Run visual tests
+npm run test:visual:update   # Update baseline screenshots
+```
+
+### CI Testing
+
+Tests run on macOS, Ubuntu, and Windows via GitHub Actions matrix. Each OS uploads:
+- Built Chrome extension (`.zip`)
+- Playwright HTML report
+- Test results directory
+
+Artifacts are retained for 7 days for debugging failed runs.
 
 ### Authenticated Tests
 
@@ -172,11 +172,12 @@ Dev builds include git commit info in `version_name` (visible in `chrome://exten
 
 | Build Type                 | version_name Example                      |
 |----------------------------|-------------------------------------------|
-| Production (tagged commit) | `1.0.0`                                   |
+| Release (CI with tag)      | `1.0.0-rc1` (from tag `v1.0.0-rc1`)       |
+| Release (local tagged)     | `1.0.0-rc1` (detected via git describe)  |
 | Dev (clean)                | `1.0.0-dev+abc1234`                       |
 | Dev (uncommitted changes)  | `1.0.0-dev+abc1234-dirty:worktree-name`   |
 
-The dirty suffix includes the worktree directory name to distinguish between multiple worktrees.
+CI release builds receive the tag name via `VERSION_TAG` environment variable. Local builds detect tags via `git describe --exact-match HEAD`. The dirty suffix includes the worktree directory name to distinguish between multiple worktrees.
 
 ## Dependency Information
 
@@ -200,19 +201,18 @@ npm install
 npm run build:firefox
 ```
 
-Output: `build/firefox/github-bookmarked-issues-{version}.xpi`
+Output: `build/bundle/github-bookmarked-issues-{version}.xpi`
 
 Source code is in `extension/`, build scripts in `scripts/`. Same source + dependencies = same output.
 
 ## Troubleshooting
 
 **"File does not contain a valid manifest" in Firefox**:
-- When loading from source, ensure `extension/manifest.json` symlink points to `manifest-firefox.json`
-- Firefox rejects manifests containing `$schema` field
-- When using file watcher, load from `build/firefox/manifest.json`
+- Load from `build/firefox/manifest.json`, not from `extension/` directory
+- Firefox rejects manifests containing `$schema` field (Chrome manifest has this)
 
-**Chrome won't load extension**:
-- Chrome does not follow symlinks - always load from `build/chrome/` directory
+**Extension not loading**:
+- Always load from `build/{browser}/` directory, not from `extension/`
 - Use `npm run dev:watch` for automatic rebuilds during development
 
 **Watcher not detecting changes**:
