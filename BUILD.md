@@ -55,7 +55,7 @@ This extension maintains **separate manifest files** due to incompatible Manifes
 "browser_specific_settings": {
   "gecko": {
     "id": "github-bookmarked-issues@extensions",
-    "strict_min_version": "128.0",
+    "strict_min_version": "142.0",
     "data_collection_permissions": {"required": ["none"]}
   }
 }
@@ -168,7 +168,8 @@ The script outputs a `GITHUB_AUTH_STATE` value to add to `.env`. Sessions expire
 
 ### Version Tracking
 
-Dev builds include git commit info in `version_name` (visible in `chrome://extensions` or `about:addons`):
+Dev builds include git commit info in `version_name` (Chrome only, visible in `chrome://extensions`).
+Firefox does not support `version_name`; it warns about unknown manifest properties at runtime.
 
 | Build Type                 | version_name Example                      |
 |----------------------------|-------------------------------------------|
