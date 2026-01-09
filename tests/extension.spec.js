@@ -167,7 +167,8 @@ test.describe('', () => {
 
       await expect(page.locator(headerActionsSelector)).toBeVisible({ timeout: 15000 });
 
-      const bookmarkButton = page.locator(bookmarkSelector);
+      // Use main header selector to avoid matching sticky header button
+      const bookmarkButton = page.locator(`${headerActionsSelector} ${bookmarkSelector}`);
       await expect(bookmarkButton).toBeVisible({ timeout: 10000 });
 
       // Click to add bookmark
@@ -182,6 +183,58 @@ test.describe('', () => {
 
       // Click again to remove bookmark
       await bookmarkButton.click();
+
+      // Verify bookmark was removed
+      await expect(async () => {
+        const bookmarks = await getBookmarks(context);
+        expect(Object.keys(bookmarks)).not.toContain(expectedKey);
+      }).toPass({ timeout: 5000 });
+    });
+
+    test('bookmark button in sticky header', async () => {
+      const bookmarkSelector = '[data-extension-bookmark]';
+      const headerActionsSelector = '[data-component="PH_Actions"]';
+      const stickyHeaderSelector = '[class*="HeaderMetadata-module__stickyContainer"]';
+
+      await clearBookmarks(context);
+
+      // Use an issue with enough content to scroll
+      await page.goto('https://github.com/microsoft/playwright/issues/11975');
+      await page.waitForLoadState('domcontentloaded');
+
+      await expect(page.locator(headerActionsSelector)).toBeVisible({ timeout: 15000 });
+
+      // Verify bookmark button exists in main header
+      const mainBookmarkButton = page.locator(`${headerActionsSelector} ${bookmarkSelector}`);
+      await expect(mainBookmarkButton).toBeVisible({ timeout: 10000 });
+
+      // Scroll down to trigger sticky header
+      await page.evaluate(() => window.scrollTo(0, 1500));
+      await page.waitForTimeout(500);
+
+      // Verify sticky header appeared
+      await expect(page.locator(stickyHeaderSelector)).toBeVisible({ timeout: 5000 });
+
+      // Verify bookmark button exists in sticky header
+      const stickyBookmarkButton = page.locator(`${stickyHeaderSelector} ${bookmarkSelector}`);
+      await expect(stickyBookmarkButton).toBeVisible({ timeout: 5000 });
+
+      // Click sticky header bookmark button to add bookmark
+      await stickyBookmarkButton.click();
+
+      // Verify bookmark was added
+      const expectedKey = 'microsoft/playwright/issues/11975';
+      await expect(async () => {
+        const bookmarks = await getBookmarks(context);
+        expect(Object.keys(bookmarks)).toContain(expectedKey);
+      }).toPass({ timeout: 5000 });
+
+      // Scroll back up and verify main header button is also in bookmarked state
+      await page.evaluate(() => window.scrollTo(0, 0));
+      await page.waitForTimeout(500);
+
+      // Click main header button to remove bookmark (verifies sync)
+      await mainBookmarkButton.click();
 
       // Verify bookmark was removed
       await expect(async () => {
@@ -208,7 +261,8 @@ test.describe('', () => {
       // Wait for header actions container (needed for button insertion)
       await expect(page.locator(headerActionsSelector)).toBeVisible({ timeout: 15000 });
 
-      const bookmarkButton = page.locator(bookmarkSelector);
+      // Use main header selector to avoid matching sticky header button
+      const bookmarkButton = page.locator(`${headerActionsSelector} ${bookmarkSelector}`);
       await expect(bookmarkButton).toBeVisible({ timeout: 10000 });
     });
 
@@ -225,7 +279,8 @@ test.describe('', () => {
       // Wait for issue page to load
       await expect(page.locator(headerActionsSelector)).toBeVisible({ timeout: 15000 });
 
-      const bookmarkButton = page.locator(bookmarkSelector);
+      // Use main header selector to avoid matching sticky header button
+      const bookmarkButton = page.locator(`${headerActionsSelector} ${bookmarkSelector}`);
       await expect(bookmarkButton).toBeVisible({ timeout: 10000 });
     });
 
@@ -247,7 +302,8 @@ test.describe('', () => {
       // Wait for issue page to load
       await expect(page.locator(headerActionsSelector)).toBeVisible({ timeout: 15000 });
 
-      const bookmarkButton = page.locator(bookmarkSelector);
+      // Use main header selector to avoid matching sticky header button
+      const bookmarkButton = page.locator(`${headerActionsSelector} ${bookmarkSelector}`);
       await expect(bookmarkButton).toBeVisible({ timeout: 10000 });
     });
 

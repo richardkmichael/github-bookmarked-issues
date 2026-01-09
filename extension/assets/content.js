@@ -75,6 +75,9 @@ if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
   // Selector for page header actions (using prefix to avoid CSS module hash)
   const HEADER_ACTIONS_SELECTOR = '[data-component="PH_Actions"] [class*="HeaderMenu-module__menuActionsContainer"]';
 
+  // Selector for sticky header actions (appears when scrolling)
+  const STICKY_HEADER_ACTIONS_SELECTOR = '[class*="HeaderMetadata-module__stickyContainer"] [class*="HeaderMenu-module__menuActionsContainer"]';
+
   // Extension button marker
   const BOOKMARK_BUTTON_ATTR = 'data-extension-bookmark';
 
@@ -122,8 +125,14 @@ if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
     button.setAttribute('aria-label', bookmarked ? 'Remove bookmark' : 'Bookmark issue');
   }
 
+  // Update all bookmark buttons on the page (main header and sticky header)
+  function updateAllBookmarkButtons(bookmarked) {
+    const buttons = document.querySelectorAll(`[${BOOKMARK_BUTTON_ATTR}]`);
+    buttons.forEach(button => updateBookmarkButton(button, bookmarked));
+  }
+
   // Handle bookmark button click
-  async function handleBookmarkClick(button) {
+  async function handleBookmarkClick() {
     const issueData = getIssueData();
     if (!issueData) {
       return;
@@ -139,7 +148,7 @@ if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
           data: { id: issueData.id }
         });
         console.log('[GitHub Bookmarked Issues] Removed bookmark:', issueData.id);
-        updateBookmarkButton(button, false);
+        updateAllBookmarkButtons(false);
       } else {
         // Add bookmark
         await browser.runtime.sendMessage({
@@ -147,7 +156,7 @@ if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
           data: issueData
         });
         console.log('[GitHub Bookmarked Issues] Added bookmark:', issueData.id);
-        updateBookmarkButton(button, true);
+        updateAllBookmarkButtons(true);
       }
     } catch (error) {
       console.error('[GitHub Bookmarked Issues] Failed to toggle bookmark:', error);
@@ -155,42 +164,20 @@ if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
     }
   }
 
-  // Create and insert bookmark button
-  async function insertBookmarkButton() {
-    const timestamp = performance.now().toFixed(1);
-    const issueData = getIssueData();
-    if (!issueData) {
-      console.log(`[GitHub Bookmarked Issues] [${timestamp}ms] Not on an issue page`);
-      return;
-    }
-
-    const actionsContainer = document.querySelector(HEADER_ACTIONS_SELECTOR);
-    if (!actionsContainer) {
-      console.log(`[GitHub Bookmarked Issues] [${timestamp}ms] Header actions not found, selector: ${HEADER_ACTIONS_SELECTOR}`);
-      return;
-    }
-
-    // Check if button already exists
-    if (document.querySelector(`[${BOOKMARK_BUTTON_ATTR}]`)) {
-      console.log(`[GitHub Bookmarked Issues] [${timestamp}ms] Bookmark button already exists`);
-      return;
-    }
-
-    console.log(`[GitHub Bookmarked Issues] [${timestamp}ms] Creating button, container children: ${actionsContainer.children.length}`);
-
-    // Create bookmark button
-    const bookmarkButton = document.createElement('button');
-    bookmarkButton.setAttribute('data-component', 'IconButton');
-    bookmarkButton.setAttribute('type', 'button');
-    bookmarkButton.className = 'prc-Button-ButtonBase-c50BI prc-Button-IconButton-szpyj';
-    bookmarkButton.setAttribute('data-loading', 'false');
-    bookmarkButton.setAttribute('data-no-visuals', 'true');
-    bookmarkButton.setAttribute('data-size', 'medium');
-    bookmarkButton.setAttribute('data-variant', 'invisible');
-    bookmarkButton.setAttribute(BOOKMARK_BUTTON_ATTR, 'true');
+  // Create a bookmark button element
+  function createBookmarkButton(bookmarked) {
+    const button = document.createElement('button');
+    button.setAttribute('data-component', 'IconButton');
+    button.setAttribute('type', 'button');
+    button.className = 'prc-Button-ButtonBase-c50BI prc-Button-IconButton-szpyj';
+    button.setAttribute('data-loading', 'false');
+    button.setAttribute('data-no-visuals', 'true');
+    button.setAttribute('data-size', 'medium');
+    button.setAttribute('data-variant', 'invisible');
+    button.setAttribute(BOOKMARK_BUTTON_ATTR, 'true');
 
     // Add inline styles to match GitHub's native icon buttons
-    bookmarkButton.style.cssText = `
+    button.style.cssText = `
       border: none;
       background: transparent;
       padding: 0;
@@ -202,28 +189,57 @@ if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
       color: inherit;
     `;
 
-    // Check if already bookmarked and set initial state
+    updateBookmarkButton(button, bookmarked);
+    button.addEventListener('click', () => handleBookmarkClick());
+
+    return button;
+  }
+
+  // Insert bookmark button into a container if not already present
+  function insertButtonIntoContainer(container, bookmarked, containerName) {
+    // Check if this container already has a bookmark button
+    if (container.querySelector(`[${BOOKMARK_BUTTON_ATTR}]`)) {
+      return false;
+    }
+
+    const button = createBookmarkButton(bookmarked);
+    container.appendChild(button);
+
+    const timestamp = performance.now().toFixed(1);
+    console.log(`[GitHub Bookmarked Issues] [${timestamp}ms] Bookmark button added to ${containerName}`);
+    return true;
+  }
+
+  // Create and insert bookmark buttons into all available headers
+  async function insertBookmarkButton() {
+    const timestamp = performance.now().toFixed(1);
+    const issueData = getIssueData();
+    if (!issueData) {
+      console.log(`[GitHub Bookmarked Issues] [${timestamp}ms] Not on an issue page`);
+      return;
+    }
+
+    // Find both header containers
+    const mainHeader = document.querySelector(HEADER_ACTIONS_SELECTOR);
+    const stickyHeader = document.querySelector(STICKY_HEADER_ACTIONS_SELECTOR);
+
+    if (!mainHeader && !stickyHeader) {
+      console.log(`[GitHub Bookmarked Issues] [${timestamp}ms] No header actions found`);
+      return;
+    }
+
+    // Check if already bookmarked (only once for both buttons)
     const bookmarked = await isBookmarked(issueData.id);
-    updateBookmarkButton(bookmarkButton, bookmarked);
 
-    // Add click handler
-    bookmarkButton.addEventListener('click', () => handleBookmarkClick(bookmarkButton));
+    // Insert into main header if available
+    if (mainHeader) {
+      insertButtonIntoContainer(mainHeader, bookmarked, 'main header');
+    }
 
-    // Insert as last child in header actions
-    actionsContainer.appendChild(bookmarkButton);
-
-    const insertTimestamp = performance.now().toFixed(1);
-    console.log(`[GitHub Bookmarked Issues] [${insertTimestamp}ms] Bookmark button added to DOM, parent: ${actionsContainer.className}`);
-
-    // Debug: watch for button removal (helps diagnose timing issues)
-    const removalObserver = new MutationObserver(() => {
-      if (!document.querySelector(`[${BOOKMARK_BUTTON_ATTR}]`)) {
-        const removeTimestamp = performance.now().toFixed(1);
-        console.log(`[GitHub Bookmarked Issues] [${removeTimestamp}ms] Button was REMOVED from DOM`);
-        removalObserver.disconnect();
-      }
-    });
-    removalObserver.observe(actionsContainer.parentElement || document.body, { childList: true, subtree: true });
+    // Insert into sticky header if available
+    if (stickyHeader) {
+      insertButtonIntoContainer(stickyHeader, bookmarked, 'sticky header');
+    }
   }
 
   // Track current URL to detect navigation
