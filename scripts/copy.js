@@ -94,7 +94,10 @@ async function build() {
 
   const versionName = getVersionName(manifest.version);
   if (versionName !== manifest.version) {
-    manifest.version_name = versionName;
+    // version_name is Chrome-specific; Firefox warns about unknown properties
+    if (browser === 'chrome') {
+      manifest.version_name = versionName;
+    }
     console.log(`  Version: ${versionName}`);
   }
 

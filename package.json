@@ -11,7 +11,7 @@
     "build": "npm run build:chrome && npm run build:firefox",
     "postbuild": "npm run lint",
     "dev:watch": "node scripts/dev-watch.js",
-    "lint": "web-ext lint --source-dir=build/firefox --artifacts-dir=build",
+    "lint": "web-ext lint --source-dir=build/firefox --artifacts-dir=build --warnings-as-errors",
     "test": "playwright test",
     "test:chrome": "playwright test --project=chromium",
     "test:visual": "playwright test --grep @visual",
