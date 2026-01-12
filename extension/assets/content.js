@@ -246,15 +246,25 @@ if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
   let currentUrl = location.href;
   let navigationTimeout = null;
 
-  // Setup observer to handle SPA navigation by watching DOM changes
+  // Setup observer to handle SPA navigation and React re-renders
   function setupNavigationObserver() {
     // Watch for DOM changes - observe body to catch all navigation
     // (observing <main> fails when <main> itself is replaced during navigation)
     const observer = new MutationObserver(() => {
       const newUrl = location.href;
-      if (newUrl !== currentUrl) {
-        currentUrl = newUrl;
-        console.log('[GitHub Bookmarked Issues] Navigation detected:', currentUrl);
+      const urlChanged = newUrl !== currentUrl;
+
+      // Also check if button was removed by React re-render (belt-and-suspenders)
+      const mainHeader = document.querySelector(HEADER_ACTIONS_SELECTOR);
+      const buttonMissing = mainHeader && !mainHeader.querySelector(`[${BOOKMARK_BUTTON_ATTR}]`);
+
+      if (urlChanged || buttonMissing) {
+        if (urlChanged) {
+          currentUrl = newUrl;
+          console.log('[GitHub Bookmarked Issues] Navigation detected:', currentUrl);
+        } else if (buttonMissing) {
+          console.log('[GitHub Bookmarked Issues] Button removed by React, re-inserting');
+        }
 
         // Debounce: clear any pending timeout and set a new one
         if (navigationTimeout) {
@@ -294,15 +304,20 @@ if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
     console.log(`[GitHub Bookmarked Issues] [${timestamp}ms] init() readyState: ${document.readyState}, URL: ${location.pathname}`);
     setupIconTemplates();
 
-    // Initial button insertion
+    // Initial button insertion - delay to allow React hydration to complete
+    // (prevents button from being removed by React re-render, especially on Windows)
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', () => {
-        insertBookmarkButton();
-        setupNavigationObserver();
+        setTimeout(() => {
+          insertBookmarkButton();
+          setupNavigationObserver();
+        }, 50);
       });
     } else {
-      insertBookmarkButton();
-      setupNavigationObserver();
+      setTimeout(() => {
+        insertBookmarkButton();
+        setupNavigationObserver();
+      }, 50);
     }
   }
 
