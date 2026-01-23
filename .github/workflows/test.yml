@@ -19,8 +19,6 @@ jobs:
         os: [macos-latest, ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
-    # TODO: Remove continue-on-error once #6 (flaky Windows test) is resolved
-    continue-on-error: ${{ matrix.os == 'windows-latest' }}
 
     steps:
       - name: Checkout
@@ -59,10 +57,43 @@ jobs:
       - name: Build Chrome extension
         run: npm run build:chrome
 
-      - name: Run tests
-        run: npm test
+      - name: Validate GitHub API PAT
+        id: validate-pat
+        shell: bash
         env:
           API_CONTRACT_TEST_PAT: ${{ secrets.API_CONTRACT_TEST_PAT }}
+        run: |
+          if [ -z "$API_CONTRACT_TEST_PAT" ]; then
+            echo "error_msg=API_CONTRACT_TEST_PAT secret is not configured. The API contract test requires this secret." >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          response=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "Authorization: Bearer $API_CONTRACT_TEST_PAT" \
+            https://api.github.com/rate_limit)
+          if [ "$response" = "401" ]; then
+            echo "error_msg=API_CONTRACT_TEST_PAT is expired or invalid (HTTP 401). Please update the repository secret." >> "$GITHUB_OUTPUT"
+          elif [ "$response" != "200" ]; then
+            echo "error_msg=GitHub API returned HTTP $response when validating PAT." >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run tests (excluding @auth-pat and @auth-session)
+        run: npm test -- --grep-invert "@auth-pat|@auth-session"
+
+      - name: Run @auth-pat tests
+        if: ${{ !steps.validate-pat.outputs.error_msg }}
+        run: npm test -- --grep @auth-pat
+        env:
+          API_CONTRACT_TEST_PAT: ${{ secrets.API_CONTRACT_TEST_PAT }}
+
+      - name: Fail @auth-pat tests (PAT issue)
+        if: ${{ steps.validate-pat.outputs.error_msg }}
+        shell: bash
+        run: |
+          echo "::error::${{ steps.validate-pat.outputs.error_msg }}"
+          exit 1
+
+      - name: Skip @auth-session tests (no session auth in CI)
+        run: echo "::notice::@auth-session tests skipped - GitHub session auth not available in CI"
 
       - name: Upload Chrome extension
         uses: actions/upload-artifact@v4

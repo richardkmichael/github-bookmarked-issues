@@ -1,9 +1,14 @@
 import { defineConfig, devices } from '@playwright/test';
+import dotenv from 'dotenv';
+
+// Load .env file for local development (GITHUB_AUTH_STATE, API_CONTRACT_TEST_PAT)
+dotenv.config({ quiet: true });
 
 // Prevent list reporter from truncating test names
 process.stdout.columns = 200;
 
 export default defineConfig({
+  globalSetup: './tests/global-setup.js',
   testDir: './tests',
   snapshotPathTemplate: '{snapshotDir}/{arg}{ext}',
   snapshotDir: './tests/screenshots',

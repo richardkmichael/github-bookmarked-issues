@@ -2,21 +2,13 @@ import { test, expect, chromium } from '@playwright/test';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { readFileSync } from 'fs';
+import { getGitHubAuth, getSessionSkipReason, getPatSkipReason } from '../scripts/validate-github-authorization.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const extensionPath = path.join(__dirname, '..', 'build', 'chrome');
 
-// Auth helper - decodes env var, returns storageState object or null
-function getGitHubAuth() {
-  const encoded = process.env.GITHUB_AUTH_STATE;
-  if (!encoded) return null;
-  try {
-    const decoded = Buffer.from(encoded, 'base64').toString('utf-8');
-    return JSON.parse(decoded);
-  } catch {
-    return null;
-  }
-}
+// Check auth once at module load for skip decisions
+const sessionSkipReason = getSessionSkipReason();
 
 // Pool of known-good GitHub issues that don't redirect to pull requests.
 // Use these in tests instead of guessing issue numbers.
@@ -137,14 +129,15 @@ test.describe('', () => {
     // Contract test: verify GitHub API returns all fields we depend on.
     // If this fails, our mocks need updating to match API changes.
     // Note: API doesn't return repository.full_name - popup.js parses from url field instead.
-    test('GitHub API contract', async () => {
+    test('GitHub API contract', { tag: '@auth-pat' }, async () => {
+      const patSkipReason = await getPatSkipReason();
+      test.skip(!!patSkipReason, patSkipReason || 'PAT unavailable');
+
       const issue = TEST_ISSUES[0];
       const url = `https://api.github.com/repos/${issue.owner}/${issue.repo}/issues/${issue.number}`;
-      const headers = {};
-      if (process.env.API_CONTRACT_TEST_PAT) {
-        headers['Authorization'] = `Bearer ${process.env.API_CONTRACT_TEST_PAT}`;
-      }
-      const response = await fetch(url, { headers });
+      const response = await fetch(url, {
+        headers: { Authorization: `Bearer ${process.env.API_CONTRACT_TEST_PAT}` },
+      });
       expect(response.ok).toBe(true);
 
       const data = await response.json();
@@ -506,7 +499,7 @@ test.describe('', () => {
       await optionsPage.close();
     });
 
-    test('controls are disabled when no input and no stored token', { tag: '@pat' }, async () => {
+    test('controls are disabled when no input and no stored token', { tag: '@pat-config' }, async () => {
       const optionsPage = await context.newPage();
       await optionsPage.goto(`chrome-extension://${extensionId}/assets/options.html`);
 
@@ -532,7 +525,7 @@ test.describe('', () => {
       await optionsPage.close();
     });
 
-    test('controls are enabled when input is present', { tag: '@pat' }, async () => {
+    test('controls are enabled when input is present', { tag: '@pat-config' }, async () => {
       const optionsPage = await context.newPage();
       await optionsPage.goto(`chrome-extension://${extensionId}/assets/options.html`);
 
@@ -550,7 +543,7 @@ test.describe('', () => {
       await optionsPage.close();
     });
 
-    test('visibility toggle shows and hides input', { tag: '@pat' }, async () => {
+    test('visibility toggle shows and hides input', { tag: '@pat-config' }, async () => {
       const optionsPage = await context.newPage();
       await optionsPage.goto(`chrome-extension://${extensionId}/assets/options.html`);
 
@@ -576,7 +569,7 @@ test.describe('', () => {
       await optionsPage.close();
     });
 
-    test('saved token loads on page open', { tag: '@pat' }, async () => {
+    test('saved token loads on page open', { tag: '@pat-config' }, async () => {
       const testToken = 'github_pat_11ABCDEFGHIJKLMNOPQRST_1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW';
 
       // Save token directly to storage
@@ -616,7 +609,7 @@ test.describe('', () => {
       await optionsPage.close();
     });
 
-    test('test button rejects invalid format', { tag: '@pat' }, async () => {
+    test('test button rejects invalid format', { tag: '@pat-config' }, async () => {
       const optionsPage = await context.newPage();
       await optionsPage.goto(`chrome-extension://${extensionId}/assets/options.html`);
 
@@ -634,7 +627,7 @@ test.describe('', () => {
       await optionsPage.close();
     });
 
-    test('save button rejects invalid format', { tag: '@pat' }, async () => {
+    test('save button rejects invalid format', { tag: '@pat-config' }, async () => {
       const optionsPage = await context.newPage();
       await optionsPage.goto(`chrome-extension://${extensionId}/assets/options.html`);
 
@@ -652,7 +645,7 @@ test.describe('', () => {
       await optionsPage.close();
     });
 
-    test('save button rejects empty input', { tag: '@pat' }, async () => {
+    test('save button rejects empty input', { tag: '@pat-config' }, async () => {
       const optionsPage = await context.newPage();
       await optionsPage.goto(`chrome-extension://${extensionId}/assets/options.html`);
 
@@ -668,7 +661,7 @@ test.describe('', () => {
       await optionsPage.close();
     });
 
-    test('remove button clears input and storage', { tag: '@pat' }, async () => {
+    test('remove button clears input and storage', { tag: '@pat-config' }, async () => {
       const testToken = 'github_pat_11ABCDEFGHIJKLMNOPQRST_1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW';
 
       // Mock the GitHub API for token validation
@@ -985,8 +978,8 @@ test.describe('', () => {
   // LOGIN REQUIRED - github.com/issues requires authentication
   // ============================================================
 
-  test.describe('Bookmarked view', { tag: '@auth' }, () => {
-    test.skip(() => !getGitHubAuth(), 'GITHUB_AUTH_STATE not configured');
+  test.describe('Bookmarked view', { tag: '@auth-session' }, () => {
+    test.skip(() => !!sessionSkipReason, sessionSkipReason || 'GitHub session auth unavailable');
 
     let authContext;
     let authPage;
@@ -1112,8 +1105,8 @@ test.describe('', () => {
   });
 
   // Error handling tests - intercept GraphQL and REST API to test error display
-  test.describe('Error Handling', { tag: '@auth' }, () => {
-    test.skip(() => !getGitHubAuth(), 'GITHUB_AUTH_STATE not configured');
+  test.describe('Error Handling', { tag: '@auth-session' }, () => {
+    test.skip(() => !!sessionSkipReason, sessionSkipReason || 'GitHub session auth unavailable');
 
     const singleBookmark = makeBookmark(TEST_ISSUES[0]);
     const multipleBookmarks = makeBookmarks(TEST_ISSUES[0], TEST_ISSUES[1], TEST_ISSUES[2]);
