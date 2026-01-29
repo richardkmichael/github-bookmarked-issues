@@ -16,8 +16,16 @@ Download the extension ZIP or XPI from [release assets](https://github.com/richa
 
 ## How it works
 
-The Bookmarks view uses GitHub's internal GraphQL API (no rate limits for logged-in users).
-The popup uses REST API - configure a PAT in options for higher limits (5,000/hr vs 60/hr).
+The Bookmarks view (at `github.com/issues/bookmarked`) uses GitHub's internal GraphQL API via
+the content script — no rate limits for logged-in users.
+
+The popup toolbar uses REST API, which is rate-limited. Configure a GitHub PAT in the
+extension options for higher limits (5,000/hr vs 60/hr unauthenticated).
+
+The Bookmarks view discovers GraphQL query hashes automatically by intercepting HTTP headers
+when you navigate to any `github.com` page. This discovery only happens on `github.com` tabs.
+If the Bookmarks view shows a rate-limit warning despite being logged in, navigate to any
+GitHub page to trigger discovery, then reload the Bookmarks view.
 
 See [GITHUB_OPERATION.md](GITHUB_OPERATION.md) for technical details.
 
@@ -66,4 +74,6 @@ npm test             # Run Playwright tests
 ## Known Limitations
 
 - **Bookmarks view navigation**: Must navigate from a built-in view (e.g., `/issues/created`), then click "Bookmarked". Direct URL navigation to `/issues/bookmarked` returns 404 (GitHub's React router doesn't know the route).
+- **GraphQL discovery requires a github.com tab**: The extension discovers GraphQL query hashes by intercepting HTTP headers from `github.com` page loads. Without discovery (e.g. if you haven't visited GitHub since installing), the Bookmarks view falls back to REST API with rate limits. Workaround: navigate to any `github.com` page, or configure a PAT in Settings.
+- **Popup always uses REST API**: Due to browser security restrictions (`Sec-Fetch-Site` header), the popup cannot use GitHub's internal GraphQL API. Without a PAT, it is limited to 60 requests/hour (unauthenticated). With many bookmarks, this can cause issues to fail to load. Configure a PAT in Settings for 5,000 requests/hour.
 - **Not cross-browser**: Local and browser-specific storage only, e.g. Google Account, Firefox Account
