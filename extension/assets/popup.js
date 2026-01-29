@@ -373,8 +373,10 @@ function updateValidationDisplay(validation) {
   // Valid items (success - green)
   if (validation.valid.length > 0) {
     const item = document.createElement('span');
-    item.className = 'import-validation-item import-validation--success';
-    item.appendChild(getIcon('check-circle'));
+    item.className = 'import-validation-item color-fg-success d-inline-flex flex-items-center ml-3';
+    const icon = getIcon('check-circle');
+    icon.classList.add('mr-1');
+    item.appendChild(icon);
     item.appendChild(document.createTextNode(`${validation.valid.length} valid`));
     container.appendChild(item);
   }
@@ -382,8 +384,10 @@ function updateValidationDisplay(validation) {
   // Duplicate items (info - blue)
   if (validation.duplicates > 0) {
     const item = document.createElement('span');
-    item.className = 'import-validation-item import-validation--info';
-    item.appendChild(getIcon('info'));
+    item.className = 'import-validation-item color-fg-attention d-inline-flex flex-items-center ml-3';
+    const icon = getIcon('info');
+    icon.classList.add('mr-1');
+    item.appendChild(icon);
     item.appendChild(document.createTextNode(`${validation.duplicates} duplicate (ignored)`));
     container.appendChild(item);
   }
@@ -391,8 +395,10 @@ function updateValidationDisplay(validation) {
   // Invalid items (danger - red)
   if (validation.invalid > 0) {
     const item = document.createElement('span');
-    item.className = 'import-validation-item import-validation--danger';
-    item.appendChild(getIcon('x-circle'));
+    item.className = 'import-validation-item color-fg-danger d-inline-flex flex-items-center ml-3';
+    const icon = getIcon('x-circle');
+    icon.classList.add('mr-1');
+    item.appendChild(icon);
     item.appendChild(document.createTextNode(`${validation.invalid} invalid`));
     container.appendChild(item);
   }
