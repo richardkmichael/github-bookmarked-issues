@@ -37,17 +37,17 @@ function getVersionName(baseVersion) {
       // Not tagged - development build
     }
 
+    // Get branch name
+    const branch = execSync('git rev-parse --abbrev-ref HEAD', { cwd: ROOT, encoding: 'utf8' }).trim();
+
     // Check if extension source is dirty
     const dirty = execSync('git status --porcelain -- extension/', { cwd: ROOT, encoding: 'utf8' }).trim();
 
     if (dirty) {
-      // Get worktree directory name
-      const worktreePath = execSync('git rev-parse --show-toplevel', { cwd: ROOT, encoding: 'utf8' }).trim();
-      const worktreeName = path.basename(worktreePath);
-      return `${baseVersion}-dev+${commitHash}-dirty:${worktreeName}`;
+      return `${baseVersion}-${branch}_${commitHash}-dirty`;
     }
 
-    return `${baseVersion}-dev+${commitHash}`;
+    return `${baseVersion}-${branch}_${commitHash}`;
   } catch (err) {
     // Not a git repo or git not available
     console.warn('Warning: Could not get git info for version_name');
@@ -107,6 +107,9 @@ async function build() {
   }
 
   await fs.writeFile(manifestDest, JSON.stringify(manifest, null, 2) + '\n');
+
+  // Write version name for package.js (Firefox manifest can't store it)
+  await fs.writeFile(path.join(TARGET, '.version_name'), versionName);
 
   console.log(`✓ Extension files copied for ${browser}`);
 }

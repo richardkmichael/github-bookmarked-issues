@@ -22,10 +22,9 @@ async function packageExtension() {
   // Create bundle directory
   await fs.mkdir(bundleDir, { recursive: true });
 
-  // Read version from manifest (prefer version_name for dev builds)
-  const manifestContent = await fs.readFile(manifestPath, 'utf8');
-  const manifest = JSON.parse(manifestContent);
-  const version = manifest.version_name || manifest.version;
+  // Read version name written by copy.js (works for both browsers)
+  const versionNamePath = path.join(buildDir, '.version_name');
+  const version = (await fs.readFile(versionNamePath, 'utf8')).trim();
 
   const packageName = `github-bookmarked-issues-${version}`;
 
@@ -38,7 +37,7 @@ async function packageExtension() {
     const isWindows = process.platform === 'win32';
     const cmd = isWindows
       ? `powershell -Command "Compress-Archive -Path '.\\*' -DestinationPath '${zipPath}' -Force"`
-      : `zip -r "${zipPath}" . -x "*.zip"`;
+      : `zip -r "${zipPath}" . -x "*.zip" -x ".version_name" -x ".DS_Store"`;
 
     execSync(cmd, {
       cwd: buildDir,
