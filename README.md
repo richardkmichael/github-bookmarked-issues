@@ -5,6 +5,15 @@
 - **Bookmarks View** - Custom view at `github.com/issues/bookmarked` (requires login)
 - **Options** - Configure GitHub PAT for higher API rate limits
 
+## Install
+
+Manual install, until Chrome Web Store and Firefox Add-On signing.
+
+Download the extension ZIP or XPI from [release assets](https://github.com/richardkmichael/github-bookmarked-issues/releases).
+
+**Chrome**: `chrome://extensions`, enable `Developer mode`, drag and drop the `ZIP`.
+**Firefox**: `about:debugging#/runtime/this-firefox`, `Load temporary Add-on`, select the `XPI`.
+
 ## How it works
 
 The Bookmarks view uses GitHub's internal GraphQL API (no rate limits for logged-in users).
@@ -57,3 +66,4 @@ npm test             # Run Playwright tests
 ## Known Limitations
 
 - **Bookmarks view navigation**: Must navigate from a built-in view (e.g., `/issues/created`), then click "Bookmarked". Direct URL navigation to `/issues/bookmarked` returns 404 (GitHub's React router doesn't know the route).
+- **Not cross-browser**: Local and browser-specific storage only, e.g. Google Account, Firefox Account
