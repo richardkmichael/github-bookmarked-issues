@@ -33,6 +33,12 @@ GitHub uses client-side routing (likely React Router):
 
 Best practice: Navigate to a built-in view first, then click to custom view.
 
+### Content Script Injection and SPA Navigation
+
+Manifest V3 content scripts (`content_scripts` in manifest.json) are only injected on full page loads, not on SPA navigation. If a user SPA-navigates from `github.com/owner/repo` to `github.com/issues`, the browser does not inject content scripts that match `/issues` — the URL changed client-side without a page load.
+
+Solution: Use broad match patterns (e.g., `https://github.com/*/*`) so the content script is already loaded on the departure page. The script can then detect URL changes via MutationObserver and self-initialize when the user arrives at the target page. This mirrors how GitHub's own SPA navigation works — scripts are already present and react to URL changes.
+
 ## GraphQL API
 
 ### Internal GraphQL Endpoint
@@ -365,6 +371,8 @@ These apply regardless of authentication:
 | Per-endpoint        | 900 points/min   | GET/HEAD/OPTIONS: 1 pt, others: 5  |
 | CPU time            | 90s per 60s real | Computation limit                  |
 | Content creation    | 80/min, 500/hour | Rate for creating content          |
+
+Secondary/abuse limit 403 responses may lack standard rate-limit headers (`X-RateLimit-Remaining`). Treat any 403 from the REST API as rate-limited, not just those with `X-RateLimit-Remaining: 0`.
 
 ### Implications for Extensions
 
