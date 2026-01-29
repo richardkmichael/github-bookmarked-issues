@@ -323,7 +323,7 @@ function createBookmarksViewTemplate() {
                     <div class="ListItems-module__listScopedCommand--GGPXX">
                       <div id="bookmarks-list-container" class="ListView-module__container--rxCWy">
                         <h2 class="sr-only prc-Heading-Heading-6CmGO">Bookmarked issues</h2>
-                        <div id="bookmarks-results-section" class="Metadata-module__container--ydeM8 ListItemsHeaderWithoutBulkActions-module__ListViewMetadata_0--oA0Cm" style="display: none;">
+                        <div id="bookmarks-results-section" class="Metadata-module__container--ydeM8 ListItemsHeaderWithoutBulkActions-module__ListViewMetadata_0--oA0Cm" style="display: none; position: relative; z-index: 1;">
                           <h3 id="bookmarks-count" class="Metadata-module__heading--vvkcl"></h3>
                           <div role="toolbar" aria-label="Actions" class="VisibleAndOverflowContainer-module__Box_0--KyT2b" style="gap: var(--base-size-4);">
                             <div class="VisibleItems-module__Box_1--LOtDr" style="gap: var(--base-size-4);">
