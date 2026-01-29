@@ -73,6 +73,11 @@ async function copyDirectory(src, dest, options = {}) {
       continue;
     }
 
+    // Skip store listing assets - not part of the extension
+    if (entry.name === 'store') {
+      continue;
+    }
+
     if (entry.isDirectory()) {
       await copyDirectory(srcPath, destPath, options);
     } else {
