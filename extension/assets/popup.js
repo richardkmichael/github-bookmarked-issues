@@ -87,27 +87,29 @@ async function displayIssues(bookmarks) {
 
   const issues = await Promise.all(issuePromises);
 
-  // Check for rate limiting (any issue with _rateLimited flag)
+  // Count failures: rate-limited issues and fetch errors (null results)
   const rateLimitedCount = issues.filter(issue => issue && issue._rateLimited).length;
+  const failedCount = issues.filter(issue => issue === null).length;
+  const errorCount = rateLimitedCount + failedCount;
   const validIssues = issues.filter(issue => issue !== null && !issue._rateLimited);
 
   loading.classList.add('d-none');
 
   // Show rate limit warning if any issues couldn't be fetched
-  if (rateLimitedCount > 0) {
-    showRateLimitWarning(rateLimitedCount, validIssues.length);
+  if (errorCount > 0) {
+    showRateLimitWarning(errorCount, validIssues.length);
   }
 
-  if (validIssues.length === 0 && rateLimitedCount === 0) {
+  if (validIssues.length === 0 && errorCount === 0) {
     emptyState.classList.remove('d-none');
     copyAllBtn.disabled = true;
     clearAllBtn.disabled = true;
     return;
   }
 
-  if (validIssues.length === 0 && rateLimitedCount > 0) {
-    // All issues rate limited with no cache - show error
-    showRateLimitError(rateLimitedCount);
+  if (validIssues.length === 0 && errorCount > 0) {
+    // All issues failed - show error
+    showRateLimitError(errorCount);
     copyAllBtn.disabled = true;
     clearAllBtn.disabled = true;
     return;

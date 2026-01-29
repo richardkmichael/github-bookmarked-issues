@@ -271,8 +271,10 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
         if (!response.ok) {
           const statusText = response.statusText || 'Unknown Error';
-          const isRateLimited = response.status === 403 &&
-            (rateLimit.remaining === '0' || response.headers.get('X-RateLimit-Remaining') === '0');
+          // Treat any 403 as rate-limited (covers both primary rate limits
+          // with X-RateLimit-Remaining: 0, and secondary/abuse limits which
+          // return 403 without standard rate-limit headers).
+          const isRateLimited = response.status === 403;
 
           if (isRateLimited) {
             // Try to return cached data on rate limit
