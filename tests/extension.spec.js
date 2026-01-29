@@ -1051,6 +1051,26 @@ test.describe('', () => {
       await expect(bookmarksNav).toBeVisible({ timeout: 10000 });
     });
 
+    test('appears after SPA navigation to /issues from another page @auth-session', async () => {
+      // Start at a GitHub page outside /issues (content-issues-list.js not injected)
+      await authPage.goto('https://github.com/microsoft/playwright');
+      await authPage.waitForLoadState('domcontentloaded');
+
+      // Click the global "Issues" link in the header to SPA-navigate to /issues
+      // Use data-testid to avoid matching the hidden hamburger menu link
+      const issuesLink = authPage.locator('a[href="https://github.com/issues"]:visible').first();
+      await expect(issuesLink).toBeVisible({ timeout: 10000 });
+      await issuesLink.click();
+
+      // Wait for /issues page content to load
+      await authPage.waitForURL('**/issues**', { timeout: 10000 });
+      await authPage.waitForLoadState('domcontentloaded');
+
+      // Bookmarked nav item should appear despite SPA navigation
+      const bookmarksNav = authPage.locator('nav a:has-text("Bookmarked")');
+      await expect(bookmarksNav).toBeVisible({ timeout: 15000 });
+    });
+
     test('displays bookmarked issues', async () => {
       await addAuthBookmarks(makeBookmark(TEST_ISSUES[0]));
 

@@ -627,18 +627,24 @@ function setupStableObserver() {
     return;
   }
 
-  const observer = new MutationObserver(() => {
-    requestAnimationFrame(() => {
-      // Simple check: Is the bookmarks nav item present?
-      const bookmarkNavItem = document.querySelector('li[data-extension-bookmarks-nav="true"]');
-      if (!bookmarkNavItem) {
-        // If bookmarks nav item is missing, re-inject it
-        const navList = document.querySelector('nav[aria-label="Default views"] ul');
-        if (navList) {
-          injectSidebarNavItem();
-        }
+  // Ensure the nav item is present, injecting if needed
+  function ensureNavItem() {
+    const bookmarkNavItem = document.querySelector('li[data-extension-bookmarks-nav="true"]');
+    if (!bookmarkNavItem) {
+      const navList = document.querySelector('nav[aria-label="Default views"] ul');
+      if (navList) {
+        injectSidebarNavItem();
       }
-    });
+    }
+  }
+
+  let debounceTimer = null;
+
+  const observer = new MutationObserver(() => {
+    // Debounce: wait for mutations to settle before checking
+    // This avoids fighting with React during active render cycles
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(ensureNavItem, 100);
   });
 
   // Watch for all types of mutations
@@ -653,10 +659,7 @@ function setupStableObserver() {
 
   // Initial setup with requestAnimationFrame
   requestAnimationFrame(() => {
-    const navList = document.querySelector('nav[aria-label="Default views"] ul');
-    if (navList && !document.querySelector('li[data-extension-bookmarks-nav="true"]')) {
-      injectSidebarNavItem();
-    }
+    ensureNavItem();
     if (isBookmarksViewActive()) {
       showBookmarksView();
     }
@@ -1510,8 +1513,14 @@ function handleNavigation() {
   }
 }
 
-// Initialize the script
-function init() {
+// Check if current page is an /issues page
+function isIssuesPage() {
+  const path = window.location.pathname;
+  return path === '/issues' || path.startsWith('/issues/');
+}
+
+// Full initialization for /issues pages
+function initIssuesPage() {
   console.log('[Bookmarked] Initializing content script for /issues page');
 
   // Setup templates
@@ -1559,6 +1568,46 @@ function init() {
   setupStorageListener();
 
   console.log('[Bookmarked] Content script initialization complete');
+}
+
+// Track current URL to detect SPA navigation to /issues
+let currentUrl = location.href;
+
+// Watch for SPA navigation to /issues from non-/issues pages
+function setupNavigationWatcher() {
+  let navigationTimeout = null;
+
+  const observer = new MutationObserver(() => {
+    const newUrl = location.href;
+    if (newUrl === currentUrl) return;
+
+    const oldPath = new URL(currentUrl).pathname;
+    currentUrl = newUrl;
+    const newPath = new URL(newUrl).pathname;
+
+    const wasOnIssues = oldPath === '/issues' || oldPath.startsWith('/issues/');
+    const nowOnIssues = newPath === '/issues' || newPath.startsWith('/issues/');
+
+    if (nowOnIssues && !wasOnIssues) {
+      console.log('[Bookmarked] SPA navigation to /issues detected');
+      // Debounce to let React finish rendering
+      clearTimeout(navigationTimeout);
+      navigationTimeout = setTimeout(() => initIssuesPage(), 100);
+    }
+  });
+
+  observer.observe(document.body, { childList: true, subtree: true });
+  console.log('[Bookmarked] Navigation watcher started');
+}
+
+// Initialize the script
+function init() {
+  if (isIssuesPage()) {
+    initIssuesPage();
+  } else {
+    // Not on /issues — watch for SPA navigation to /issues
+    setupNavigationWatcher();
+  }
 }
 
 // Wait for DOM to be ready
