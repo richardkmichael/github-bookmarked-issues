@@ -81,6 +81,12 @@ if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
   // Extension button marker
   const BOOKMARK_BUTTON_ATTR = 'data-extension-bookmark';
 
+  // PRC classes used by the bookmark button (fallback values for when discovery fails)
+  registerCssClasses([
+    'prc-Button-ButtonBase',
+    'prc-Button-IconButton',
+  ]);
+
   // Extract issue data from current page
   function getIssueData() {
     const urlMatch = window.location.pathname.match(/^\/([^/]+)\/([^/]+)\/issues\/(\d+)/);
@@ -169,7 +175,7 @@ if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
     const button = document.createElement('button');
     button.setAttribute('data-component', 'IconButton');
     button.setAttribute('type', 'button');
-    button.className = 'prc-Button-ButtonBase-c50BI prc-Button-IconButton-szpyj';
+    button.className = `${cls('prc-Button-ButtonBase')} ${cls('prc-Button-IconButton')}`;
     button.setAttribute('data-loading', 'false');
     button.setAttribute('data-no-visuals', 'true');
     button.setAttribute('data-size', 'medium');
@@ -303,6 +309,7 @@ if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
     const timestamp = performance.now().toFixed(1);
     console.log(`[GitHub Bookmarked Issues] [${timestamp}ms] init() readyState: ${document.readyState}, URL: ${location.pathname}`);
     setupIconTemplates();
+    discoverCssClasses();
 
     // Initial button insertion - delay to allow React hydration to complete
     // (prevents button from being removed by React re-render, especially on Windows)

@@ -34,143 +34,98 @@ const GITHUB_QUERIES = {
   }
 };
 
-// CSS Class Discovery System
-// GitHub uses CSS modules with generated hash suffixes that change between deployments.
-// This system discovers current class names from the native GitHub DOM, with hardcoded fallbacks.
-
-// Default (fallback) class names - used when discovery fails (e.g., direct navigation to /issues/bookmarked)
-const DEFAULT_CSS_CLASSES = {
+// CSS module/PRC class prefixes used by the bookmarks view.
+// discoverCssClasses() resolves these to full class names (with hash suffix) from stylesheets.
+// Entries with [prefix, property, value] disambiguate prefixes shared by multiple components.
+registerCssClasses([
   // --- CSS Module classes (template) ---
-  'ThreePanesLayout-module__ThreePanesLayoutMiddleOnlyPane': 'ThreePanesLayout-module__ThreePanesLayoutMiddleOnlyPane--uNVJC',
-  'ThreePanesLayout-module__ThreePanesLayout': 'ThreePanesLayout-module__ThreePanesLayout--_NONE',
-  'Header-module__HeaderListContainer': 'Header-module__HeaderListContainer--KyKxD',
-  'HeaderContent-module__HeaderContentContainer': 'HeaderContent-module__HeaderContentContainer--VW7Bw',
-  'HeaderContent-module__displayModeContainer': 'HeaderContent-module__displayModeContainer--cJT14',
-  'HeaderContent-module__titleOptionsRow': 'HeaderContent-module__titleOptionsRow--hPAtk',
-  'HeaderContent-module__Heading': 'HeaderContent-module__Heading--uCBAw',
-  'Search-module__SearchContainer': 'Search-module__SearchContainer--CkrWX',
-  'SearchBar-module__gap8': 'SearchBar-module__gap8--tZi0W',
-  'SearchBar-module__filterContainer': 'SearchBar-module__filterContainer--XzLet',
-  'SearchBar-module__filter': 'SearchBar-module__filter--uooUm',
-  'Input-module__Box_': 'Input-module__Box_4--DZrl_',
-  'ListItems-module__listContainer': 'ListItems-module__listContainer--sgptj',
-  'ListItems-module__listScopedCommand': 'ListItems-module__listScopedCommand--GGPXX',
-  'ListView-module__container': 'ListView-module__container--rxCWy',
-  'Metadata-module__container': 'Metadata-module__container--ydeM8',
-  'ListItemsHeaderWithoutBulkActions-module__ListViewMetadata_0': 'ListItemsHeaderWithoutBulkActions-module__ListViewMetadata_0--oA0Cm',
-  'Metadata-module__heading': 'Metadata-module__heading--vvkcl',
-  'VisibleAndOverflowContainer-module__Box_0': 'VisibleAndOverflowContainer-module__Box_0--KyT2b',
-  'VisibleItems-module__Box_1': 'VisibleItems-module__Box_1--LOtDr',
-  'VisibleItem-module__Box_0': 'VisibleItem-module__Box_0--BsJkb',
-  'ListView-module__ul': 'ListView-module__ul--A_8jF',
+  'ThreePanesLayout-module__ThreePanesLayoutMiddleOnlyPane',
+  'ThreePanesLayout-module__ThreePanesLayout',
+  'Header-module__HeaderListContainer',
+  'HeaderContent-module__HeaderContentContainer',
+  'HeaderContent-module__displayModeContainer',
+  'HeaderContent-module__titleOptionsRow',
+  'HeaderContent-module__Heading',
+  'Search-module__SearchContainer',
+  'SearchBar-module__gap8',
+  'SearchBar-module__filterContainer',
+  'SearchBar-module__filter',
+  'Input-module__Box_',
+  'ListItems-module__listContainer',
+  'ListItems-module__listScopedCommand',
+  'ListView-module__container',
+  ['Metadata-module__container', 'height', '48px'],
+  'ListItemsHeaderWithoutBulkActions-module__ListViewMetadata_0',
+  'Metadata-module__heading',
+  'VisibleAndOverflowContainer-module__Box_0',
+  'VisibleItems-module__Box_1',
+  'VisibleItem-module__Box_0',
+  'ListView-module__ul',
 
   // --- CSS Module classes (skeleton + render) ---
-  'ListItems-module__listItem': 'ListItems-module__listItem--KRcR0',
-  'IssueRow-module__row': 'IssueRow-module__row--pHXv5',
-  'ListItem-module__listItem': 'ListItem-module__listItem--k4eMk',
-  'Title-module__container': 'Title-module__container--XD9YG',
-  'Title-module__heading': 'Title-module__heading--s7YnL',
-  'IssuePullRequestTitle-module__ListItemTitle_0': 'IssuePullRequestTitle-module__ListItemTitle_0--ORbH2',
-  'IssuePullRequestTitle-module__ListItemTitle_1': 'IssuePullRequestTitle-module__ListItemTitle_1--FWLq8',
-  'LeadingContent-module__container': 'LeadingContent-module__container--cui6v',
-  'IssueItem-module__leadingContent': 'IssueItem-module__leadingContent--s16iU',
-  'LeadingVisual-module__outer': 'LeadingVisual-module__outer--qS9Ac',
-  'LeadingVisual-module__inner': 'LeadingVisual-module__inner--GeEeG',
-  'MainContent-module__container': 'MainContent-module__container--NyRpm',
-  'MainContent-module__inner': 'MainContent-module__inner--qD0Pb',
-  'Description-module__container': 'Description-module__container--Zwqe8',
-  'DescriptionItem-module__default': 'DescriptionItem-module__default--rAYpS',
-  'IssuePullRequestDescription-module__descriptionItem': 'IssuePullRequestDescription-module__descriptionItem--ndXf0',
-  'IssueItem-module__defaultRepoContainer': 'IssueItem-module__defaultRepoContainer--oNwmq',
-  'IssueItem-module__defaultNumberDescription': 'IssueItem-module__defaultNumberDescription--_0xgU',
-  'IssueItem-module__timestampContainer': 'IssueItem-module__timestampContainer--koCC8',
-  'IssueItem-module__authorCreatedLink': 'IssueItem-module__authorCreatedLink--kzskP',
-  'IssuePullRequestDescription-module__RelativeTime': 'IssuePullRequestDescription-module__RelativeTime--lbeGP',
-  'MetadataContainer-module__container': 'MetadataContainer-module__container--nU0s9',
-  'IssueItem-module__ListItem_0': 'IssueItem-module__ListItem_0--ni8FY',
-  'Metadata-module__metadata': 'Metadata-module__metadata--ODMG0',
-  'Metadata-module__secondary': 'Metadata-module__secondary--1te4w',
-  'IssueItemMetadata-module__ListItemMetadata_0': 'IssueItemMetadata-module__ListItemMetadata_0--iaEA1',
-  'IssueItem-module__commentCountContainer': 'IssueItem-module__commentCountContainer--YUcKU',
+  'ListItems-module__listItem',
+  'IssueRow-module__row',
+  'ListItem-module__listItem',
+  ['Title-module__container', 'display', '-webkit-box'],
+  'Title-module__heading',
+  'IssuePullRequestTitle-module__ListItemTitle_0',
+  'IssuePullRequestTitle-module__ListItemTitle_1',
+  ['LeadingContent-module__container', 'height', '100%'],
+  'IssueItem-module__leadingContent',
+  'LeadingVisual-module__outer',
+  'LeadingVisual-module__inner',
+  'MainContent-module__container',
+  'MainContent-module__inner',
+  'Description-module__container',
+  'DescriptionItem-module__default',
+  'IssuePullRequestDescription-module__descriptionItem',
+  'IssueItem-module__defaultRepoContainer',
+  'IssueItem-module__defaultNumberDescription',
+  'IssueItem-module__timestampContainer',
+  'IssueItem-module__authorCreatedLink',
+  'IssuePullRequestDescription-module__RelativeTime',
+  'MetadataContainer-module__container',
+  'IssueItem-module__ListItem_0',
+  'Metadata-module__metadata',
+  'Metadata-module__secondary',
+  'IssueItemMetadata-module__ListItemMetadata_0',
+  'IssueItem-module__commentCountContainer',
 
   // --- PRC classes ---
-  'prc-PageLayout-ContentWrapper': 'prc-PageLayout-ContentWrapper-b-QRo',
-  'prc-PageLayout-Content': 'prc-PageLayout-Content--F7-I',
-  'prc-PageLayout-PageLayoutRoot': 'prc-PageLayout-PageLayoutRoot--KH-d',
-  'prc-PageLayout-PageLayoutWrapper': 'prc-PageLayout-PageLayoutWrapper-_NONE',
-  'prc-PageLayout-PageLayoutContent': 'prc-PageLayout-PageLayoutContent-_NONE',
-  'prc-Heading-Heading': 'prc-Heading-Heading-6CmGO',
-  'prc-Button-ButtonBase': 'prc-Button-ButtonBase-9n-Xk',
-  'prc-Button-ButtonContent': 'prc-Button-ButtonContent-Iohp5',
-  'prc-Button-Visual': 'prc-Button-Visual-YNt2F',
-  'prc-Button-VisualWrap': 'prc-Button-VisualWrap-E4cnq',
-  'prc-Button-Label': 'prc-Button-Label-FWkx3',
-  'prc-ActionList-ActionList': 'prc-ActionList-ActionList-rPFF2',
-  'prc-ActionList-Group': 'prc-ActionList-Group-lMIPQ',
-  'prc-ActionList-GroupHeadingWrap': 'prc-ActionList-GroupHeadingWrap-laXcX',
-  'prc-ActionList-GroupHeading': 'prc-ActionList-GroupHeading-STzxi',
-  'prc-ActionList-GroupList': 'prc-ActionList-GroupList-V5B3-',
-  'prc-ActionList-ActionListItem': 'prc-ActionList-ActionListItem-So4vC',
-  'prc-ActionList-ActionListContent': 'prc-ActionList-ActionListContent-KBb8-',
-  'prc-ActionList-LeadingAction': 'prc-ActionList-LeadingAction-hbWbh',
-  'prc-ActionList-VisualWrap': 'prc-ActionList-VisualWrap-bdCsS',
-  'prc-ActionList-ActionListSubContent': 'prc-ActionList-ActionListSubContent-gKsFp',
-  'prc-ActionList-ItemLabel': 'prc-ActionList-ItemLabel-81ohH',
-  'prc-ActionList-Divider': 'prc-ActionList-Divider-taVfb',
-  'prc-ActionList-Spacer': 'prc-ActionList-Spacer-4tR2m',
-  'prc-ActionList-SingleSelectCheckmark': 'prc-ActionList-SingleSelectCheckmark-zMd8d',
-  'prc-ActionList-LeadingVisual': 'prc-ActionList-LeadingVisual-NBr28',
-  'prc-Text-Text': 'prc-Text-Text-0ima0',
-  'prc-Link-Link': 'prc-Link-Link-85e08',
-  'prc-TooltipV2-Tooltip': 'prc-TooltipV2-Tooltip-_NONE',
+  'prc-PageLayout-ContentWrapper',
+  'prc-PageLayout-Content',
+  'prc-PageLayout-PageLayoutRoot',
+  'prc-PageLayout-PageLayoutWrapper',
+  'prc-PageLayout-PageLayoutContent',
+  'prc-Heading-Heading',
+  'prc-Button-ButtonBase',
+  'prc-Button-ButtonContent',
+  'prc-Button-Visual',
+  'prc-Button-VisualWrap',
+  'prc-Button-Label',
+  'prc-ActionList-ActionList',
+  'prc-ActionList-Group',
+  'prc-ActionList-GroupHeadingWrap',
+  'prc-ActionList-GroupHeading',
+  'prc-ActionList-GroupList',
+  'prc-ActionList-ActionListItem',
+  'prc-ActionList-ActionListContent',
+  'prc-ActionList-LeadingAction',
+  'prc-ActionList-VisualWrap',
+  'prc-ActionList-ActionListSubContent',
+  'prc-ActionList-ItemLabel',
+  'prc-ActionList-Divider',
+  'prc-ActionList-Spacer',
+  'prc-ActionList-SingleSelectCheckmark',
+  'prc-ActionList-LeadingVisual',
+  'prc-Text-Text',
+  'prc-Link-Link',
+  'prc-TooltipV2-Tooltip',
 
   // --- Styled-components ---
-  'Text__StyledText-sc': 'Text__StyledText-sc-1klmep6-0',
-  'Box-sc': 'Box-sc-62in7e-0',
-};
-
-// Active class map (populated from defaults, overwritten by discovery)
-const CSS_CLASSES = new Map(Object.entries(DEFAULT_CSS_CLASSES));
-
-// Look up a CSS class by its stable key
-function cls(key) {
-  return CSS_CLASSES.get(key) || key;
-}
-
-// Look up multiple CSS classes and join with spaces
-function clsAll(...keys) {
-  return keys.map(k => cls(k)).join(' ');
-}
-
-// Discover current CSS class names from the native GitHub DOM
-function discoverCssClasses() {
-  let discovered = 0;
-
-  for (const [key, fallback] of CSS_CLASSES) {
-    // Build a CSS attribute selector to find elements with this class pattern
-    const selector = `[class*="${key}"]`;
-
-    let el;
-    try {
-      el = document.querySelector(selector);
-    } catch {
-      // Invalid selector (shouldn't happen, but be safe)
-      continue;
-    }
-    if (!el) continue;
-
-    // Find the full class name from the element's classList
-    const fullClass = Array.from(el.classList).find(c => c.startsWith(key));
-    if (fullClass && fullClass !== fallback) {
-      CSS_CLASSES.set(key, fullClass);
-      discovered++;
-    }
-  }
-
-  if (discovered > 0) {
-    console.log(`[Bookmarked] Discovered ${discovered} updated CSS classes from native DOM`);
-  }
-}
+  'Text__StyledText-sc',
+  'Box-sc',
+]);
 
 // Build search query string for batch fetching bookmarked issues
 function buildIssueSearchQuery(bookmarks) {
