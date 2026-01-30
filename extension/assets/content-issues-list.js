@@ -34,6 +34,144 @@ const GITHUB_QUERIES = {
   }
 };
 
+// CSS Class Discovery System
+// GitHub uses CSS modules with generated hash suffixes that change between deployments.
+// This system discovers current class names from the native GitHub DOM, with hardcoded fallbacks.
+
+// Default (fallback) class names - used when discovery fails (e.g., direct navigation to /issues/bookmarked)
+const DEFAULT_CSS_CLASSES = {
+  // --- CSS Module classes (template) ---
+  'ThreePanesLayout-module__ThreePanesLayoutMiddleOnlyPane': 'ThreePanesLayout-module__ThreePanesLayoutMiddleOnlyPane--uNVJC',
+  'ThreePanesLayout-module__ThreePanesLayout': 'ThreePanesLayout-module__ThreePanesLayout--_NONE',
+  'Header-module__HeaderListContainer': 'Header-module__HeaderListContainer--KyKxD',
+  'HeaderContent-module__HeaderContentContainer': 'HeaderContent-module__HeaderContentContainer--VW7Bw',
+  'HeaderContent-module__displayModeContainer': 'HeaderContent-module__displayModeContainer--cJT14',
+  'HeaderContent-module__titleOptionsRow': 'HeaderContent-module__titleOptionsRow--hPAtk',
+  'HeaderContent-module__Heading': 'HeaderContent-module__Heading--uCBAw',
+  'Search-module__SearchContainer': 'Search-module__SearchContainer--CkrWX',
+  'SearchBar-module__gap8': 'SearchBar-module__gap8--tZi0W',
+  'SearchBar-module__filterContainer': 'SearchBar-module__filterContainer--XzLet',
+  'SearchBar-module__filter': 'SearchBar-module__filter--uooUm',
+  'Input-module__Box_': 'Input-module__Box_4--DZrl_',
+  'ListItems-module__listContainer': 'ListItems-module__listContainer--sgptj',
+  'ListItems-module__listScopedCommand': 'ListItems-module__listScopedCommand--GGPXX',
+  'ListView-module__container': 'ListView-module__container--rxCWy',
+  'Metadata-module__container': 'Metadata-module__container--ydeM8',
+  'ListItemsHeaderWithoutBulkActions-module__ListViewMetadata_0': 'ListItemsHeaderWithoutBulkActions-module__ListViewMetadata_0--oA0Cm',
+  'Metadata-module__heading': 'Metadata-module__heading--vvkcl',
+  'VisibleAndOverflowContainer-module__Box_0': 'VisibleAndOverflowContainer-module__Box_0--KyT2b',
+  'VisibleItems-module__Box_1': 'VisibleItems-module__Box_1--LOtDr',
+  'VisibleItem-module__Box_0': 'VisibleItem-module__Box_0--BsJkb',
+  'ListView-module__ul': 'ListView-module__ul--A_8jF',
+
+  // --- CSS Module classes (skeleton + render) ---
+  'ListItems-module__listItem': 'ListItems-module__listItem--KRcR0',
+  'IssueRow-module__row': 'IssueRow-module__row--pHXv5',
+  'ListItem-module__listItem': 'ListItem-module__listItem--k4eMk',
+  'Title-module__container': 'Title-module__container--XD9YG',
+  'Title-module__heading': 'Title-module__heading--s7YnL',
+  'IssuePullRequestTitle-module__ListItemTitle_0': 'IssuePullRequestTitle-module__ListItemTitle_0--ORbH2',
+  'IssuePullRequestTitle-module__ListItemTitle_1': 'IssuePullRequestTitle-module__ListItemTitle_1--FWLq8',
+  'LeadingContent-module__container': 'LeadingContent-module__container--cui6v',
+  'IssueItem-module__leadingContent': 'IssueItem-module__leadingContent--s16iU',
+  'LeadingVisual-module__outer': 'LeadingVisual-module__outer--qS9Ac',
+  'LeadingVisual-module__inner': 'LeadingVisual-module__inner--GeEeG',
+  'MainContent-module__container': 'MainContent-module__container--NyRpm',
+  'MainContent-module__inner': 'MainContent-module__inner--qD0Pb',
+  'Description-module__container': 'Description-module__container--Zwqe8',
+  'DescriptionItem-module__default': 'DescriptionItem-module__default--rAYpS',
+  'IssuePullRequestDescription-module__descriptionItem': 'IssuePullRequestDescription-module__descriptionItem--ndXf0',
+  'IssueItem-module__defaultRepoContainer': 'IssueItem-module__defaultRepoContainer--oNwmq',
+  'IssueItem-module__defaultNumberDescription': 'IssueItem-module__defaultNumberDescription--_0xgU',
+  'IssueItem-module__timestampContainer': 'IssueItem-module__timestampContainer--koCC8',
+  'IssueItem-module__authorCreatedLink': 'IssueItem-module__authorCreatedLink--kzskP',
+  'IssuePullRequestDescription-module__RelativeTime': 'IssuePullRequestDescription-module__RelativeTime--lbeGP',
+  'MetadataContainer-module__container': 'MetadataContainer-module__container--nU0s9',
+  'IssueItem-module__ListItem_0': 'IssueItem-module__ListItem_0--ni8FY',
+  'Metadata-module__metadata': 'Metadata-module__metadata--ODMG0',
+  'Metadata-module__secondary': 'Metadata-module__secondary--1te4w',
+  'IssueItemMetadata-module__ListItemMetadata_0': 'IssueItemMetadata-module__ListItemMetadata_0--iaEA1',
+  'IssueItem-module__commentCountContainer': 'IssueItem-module__commentCountContainer--YUcKU',
+
+  // --- PRC classes ---
+  'prc-PageLayout-ContentWrapper': 'prc-PageLayout-ContentWrapper-b-QRo',
+  'prc-PageLayout-Content': 'prc-PageLayout-Content--F7-I',
+  'prc-PageLayout-PageLayoutRoot': 'prc-PageLayout-PageLayoutRoot--KH-d',
+  'prc-PageLayout-PageLayoutWrapper': 'prc-PageLayout-PageLayoutWrapper-_NONE',
+  'prc-PageLayout-PageLayoutContent': 'prc-PageLayout-PageLayoutContent-_NONE',
+  'prc-Heading-Heading': 'prc-Heading-Heading-6CmGO',
+  'prc-Button-ButtonBase': 'prc-Button-ButtonBase-9n-Xk',
+  'prc-Button-ButtonContent': 'prc-Button-ButtonContent-Iohp5',
+  'prc-Button-Visual': 'prc-Button-Visual-YNt2F',
+  'prc-Button-VisualWrap': 'prc-Button-VisualWrap-E4cnq',
+  'prc-Button-Label': 'prc-Button-Label-FWkx3',
+  'prc-ActionList-ActionList': 'prc-ActionList-ActionList-rPFF2',
+  'prc-ActionList-Group': 'prc-ActionList-Group-lMIPQ',
+  'prc-ActionList-GroupHeadingWrap': 'prc-ActionList-GroupHeadingWrap-laXcX',
+  'prc-ActionList-GroupHeading': 'prc-ActionList-GroupHeading-STzxi',
+  'prc-ActionList-GroupList': 'prc-ActionList-GroupList-V5B3-',
+  'prc-ActionList-ActionListItem': 'prc-ActionList-ActionListItem-So4vC',
+  'prc-ActionList-ActionListContent': 'prc-ActionList-ActionListContent-KBb8-',
+  'prc-ActionList-LeadingAction': 'prc-ActionList-LeadingAction-hbWbh',
+  'prc-ActionList-VisualWrap': 'prc-ActionList-VisualWrap-bdCsS',
+  'prc-ActionList-ActionListSubContent': 'prc-ActionList-ActionListSubContent-gKsFp',
+  'prc-ActionList-ItemLabel': 'prc-ActionList-ItemLabel-81ohH',
+  'prc-ActionList-Divider': 'prc-ActionList-Divider-taVfb',
+  'prc-ActionList-Spacer': 'prc-ActionList-Spacer-4tR2m',
+  'prc-ActionList-SingleSelectCheckmark': 'prc-ActionList-SingleSelectCheckmark-zMd8d',
+  'prc-ActionList-LeadingVisual': 'prc-ActionList-LeadingVisual-NBr28',
+  'prc-Text-Text': 'prc-Text-Text-0ima0',
+  'prc-Link-Link': 'prc-Link-Link-85e08',
+  'prc-TooltipV2-Tooltip': 'prc-TooltipV2-Tooltip-_NONE',
+
+  // --- Styled-components ---
+  'Text__StyledText-sc': 'Text__StyledText-sc-1klmep6-0',
+  'Box-sc': 'Box-sc-62in7e-0',
+};
+
+// Active class map (populated from defaults, overwritten by discovery)
+const CSS_CLASSES = new Map(Object.entries(DEFAULT_CSS_CLASSES));
+
+// Look up a CSS class by its stable key
+function cls(key) {
+  return CSS_CLASSES.get(key) || key;
+}
+
+// Look up multiple CSS classes and join with spaces
+function clsAll(...keys) {
+  return keys.map(k => cls(k)).join(' ');
+}
+
+// Discover current CSS class names from the native GitHub DOM
+function discoverCssClasses() {
+  let discovered = 0;
+
+  for (const [key, fallback] of CSS_CLASSES) {
+    // Build a CSS attribute selector to find elements with this class pattern
+    const selector = `[class*="${key}"]`;
+
+    let el;
+    try {
+      el = document.querySelector(selector);
+    } catch {
+      // Invalid selector (shouldn't happen, but be safe)
+      continue;
+    }
+    if (!el) continue;
+
+    // Find the full class name from the element's classList
+    const fullClass = Array.from(el.classList).find(c => c.startsWith(key));
+    if (fullClass && fullClass !== fallback) {
+      CSS_CLASSES.set(key, fullClass);
+      discovered++;
+    }
+  }
+
+  if (discovered > 0) {
+    console.log(`[Bookmarked] Discovered ${discovered} updated CSS classes from native DOM`);
+  }
+}
+
 // Build search query string for batch fetching bookmarked issues
 function buildIssueSearchQuery(bookmarks) {
   // Build: is:issue (repo:owner/repo1 in:number 123) OR (repo:owner/repo2 in:number 456)
@@ -202,25 +340,25 @@ function createSkeletonItemTemplate() {
   const template = document.createElement('template');
   template.id = 'skeleton-item';
   template.innerHTML = `
-    <div class="ListItems-module__listItem--KRcR0">
-      <div class="IssueRow-module__row--pHXv5">
-        <div class="ListItem-module__listItem--k4eMk skeleton-item">
-          <div class="Title-module__container--XD9YG" data-listview-item-title-container="true">
+    <div class="${cls('ListItems-module__listItem')}">
+      <div class="${cls('IssueRow-module__row')}">
+        <div class="${cls('ListItem-module__listItem')} skeleton-item">
+          <div class="${cls('Title-module__container')}" data-listview-item-title-container="true">
             <div class="skeleton-text skeleton-title"></div>
           </div>
-          <div class="LeadingContent-module__container--cui6v IssueItem-module__leadingContent--s16iU">
-            <div class="LeadingVisual-module__outer--qS9Ac" style="margin-top: 14px;">
+          <div class="${clsAll('LeadingContent-module__container', 'IssueItem-module__leadingContent')}">
+            <div class="${cls('LeadingVisual-module__outer')}" style="margin-top: 14px;">
               <div>
-                <div class="LeadingVisual-module__inner--GeEeG" style="width: 16px; height: 16px;">
+                <div class="${cls('LeadingVisual-module__inner')}" style="width: 16px; height: 16px;">
                   <div class="skeleton-box skeleton-icon"></div>
                 </div>
               </div>
             </div>
           </div>
-          <div class="MainContent-module__container--NyRpm">
-            <div class="MainContent-module__inner--qD0Pb">
-              <div class="Description-module__container--Zwqe8">
-                <div class="DescriptionItem-module__default--rAYpS IssuePullRequestDescription-module__descriptionItem--ndXf0">
+          <div class="${cls('MainContent-module__container')}">
+            <div class="${cls('MainContent-module__inner')}">
+              <div class="${cls('Description-module__container')}">
+                <div class="${clsAll('DescriptionItem-module__default', 'IssuePullRequestDescription-module__descriptionItem')}">
                   <div class="skeleton-text skeleton-description"></div>
                 </div>
               </div>
@@ -287,29 +425,29 @@ function createBookmarksViewTemplate() {
   template.id = 'bookmarks-view';
   template.innerHTML = `
     <div data-extension-bookmarks-container="true" style="display: none;">
-      <div class="prc-PageLayout-ContentWrapper-b-QRo" data-is-hidden="false">
-        <div class="prc-PageLayout-Content--F7-I" data-width="full" style="--spacing: var(--spacing-none);">
-          <div class="ThreePanesLayout-module__ThreePanesLayoutMiddleOnlyPane--uNVJC">
-            <div class="Box-sc-62in7e-0 pKvlx">
+      <div class="${cls('prc-PageLayout-ContentWrapper')}" data-is-hidden="false">
+        <div class="${cls('prc-PageLayout-Content')}" data-width="full" style="--spacing: var(--spacing-none);">
+          <div class="${cls('ThreePanesLayout-module__ThreePanesLayoutMiddleOnlyPane')}">
+            <div class="${cls('Box-sc')} pKvlx">
               <div data-testid="list-header">
-                <div class="Header-module__HeaderListContainer--KyKxD">
-                  <div class="HeaderContent-module__HeaderContentContainer--VW7Bw">
-                    <div class="HeaderContent-module__displayModeContainer--cJT14">
-                      <span class="HeaderContent-module__titleOptionsRow--hPAtk">
-                        <h1 class="HeaderContent-module__Heading--uCBAw prc-Heading-Heading-6CmGO">Bookmarked</h1>
+                <div class="${cls('Header-module__HeaderListContainer')}">
+                  <div class="${cls('HeaderContent-module__HeaderContentContainer')}">
+                    <div class="${cls('HeaderContent-module__displayModeContainer')}">
+                      <span class="${cls('HeaderContent-module__titleOptionsRow')}">
+                        <h1 class="${clsAll('HeaderContent-module__Heading', 'prc-Heading-Heading')}">Bookmarked</h1>
                       </span>
                     </div>
                   </div>
                 </div>
               </div>
-              <div class="Search-module__SearchContainer--CkrWX">
-                <div class="SearchBar-module__gap8--tZi0W px-0 d-block flex-row flex-justify-between">
-                  <div class="SearchBar-module__filterContainer--XzLet SearchBar-module__gap8--tZi0W d-flex flex-row flex-1 flexWrap min-width-0">
-                    <div class="SearchBar-module__filter--uooUm d-flex flex-1 flex-column">
+              <div class="${cls('Search-module__SearchContainer')}">
+                <div class="${cls('SearchBar-module__gap8')} px-0 d-block flex-row flex-justify-between">
+                  <div class="${clsAll('SearchBar-module__filterContainer', 'SearchBar-module__gap8')} d-flex flex-row flex-1 flexWrap min-width-0">
+                    <div class="${cls('SearchBar-module__filter')} d-flex flex-1 flex-column">
                       <div class="FormControl FormControl--fullWidth">
                         <label for="bookmarks-filter" class="FormControl-label sr-only">Filter bookmarked issues</label>
                         <div class="d-flex" style="border: 1px solid var(--borderColor-default, var(--color-border-default)); border-radius: 6px; overflow: hidden;">
-                          <input type="text" id="bookmarks-filter" class="FormControl-input Input-module__Box_4--DZrl_" placeholder="Filter by issue title..." autocomplete="off" style="flex: 1; min-width: 0; border: none;">
+                          <input type="text" id="bookmarks-filter" class="FormControl-input ${cls('Input-module__Box_')}" placeholder="Filter by issue title..." autocomplete="off" style="flex: 1; min-width: 0; border: none;">
                           <span class="d-flex flex-items-center px-2" style="background: var(--bgColor-muted, var(--color-canvas-subtle)); border-left: 1px solid var(--borderColor-default, var(--color-border-default)); color: var(--fgColor-muted, var(--color-fg-muted));">
                             <svg aria-hidden="true" focusable="false" class="octicon octicon-search" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" style="vertical-align: text-bottom;"><path d="M10.68 11.74a6 6 0 0 1-7.922-8.982 6 6 0 0 1 8.982 7.922l3.04 3.04a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215ZM11.5 7a4.499 4.499 0 1 0-8.997 0A4.499 4.499 0 0 0 11.5 7Z"></path></svg>
                           </span>
@@ -319,113 +457,113 @@ function createBookmarksViewTemplate() {
                   </div>
                 </div>
                 <div>
-                  <div class="ListItems-module__listContainer--sgptj">
-                    <div class="ListItems-module__listScopedCommand--GGPXX">
-                      <div id="bookmarks-list-container" class="ListView-module__container--rxCWy">
-                        <h2 class="sr-only prc-Heading-Heading-6CmGO">Bookmarked issues</h2>
-                        <div id="bookmarks-results-section" class="Metadata-module__container--ydeM8 ListItemsHeaderWithoutBulkActions-module__ListViewMetadata_0--oA0Cm" style="display: none; position: relative; z-index: 1;">
-                          <h3 id="bookmarks-count" class="Metadata-module__heading--vvkcl"></h3>
-                          <div role="toolbar" aria-label="Actions" class="VisibleAndOverflowContainer-module__Box_0--KyT2b" style="gap: var(--base-size-4);">
-                            <div class="VisibleItems-module__Box_1--LOtDr" style="gap: var(--base-size-4);">
-                              <div data-action-bar-item="spinner" class="VisibleItem-module__Box_0--BsJkb"></div>
-                              <div data-action-bar-item="sort-by" class="VisibleItem-module__Box_0--BsJkb" style="position: relative;">
-                                <button type="button" id="bookmarks-sort-button" aria-haspopup="true" aria-expanded="false" class="prc-Button-ButtonBase-9n-Xk" data-loading="false" data-size="medium" data-variant="invisible">
-                                  <span data-component="buttonContent" class="prc-Button-ButtonContent-Iohp5">
-                                    <span data-component="leadingVisual" class="prc-Button-Visual-YNt2F prc-Button-VisualWrap-E4cnq">
+                  <div class="${cls('ListItems-module__listContainer')}">
+                    <div class="${cls('ListItems-module__listScopedCommand')}">
+                      <div id="bookmarks-list-container" class="${cls('ListView-module__container')}">
+                        <h2 class="sr-only ${cls('prc-Heading-Heading')}">Bookmarked issues</h2>
+                        <div id="bookmarks-results-section" class="${clsAll('Metadata-module__container', 'ListItemsHeaderWithoutBulkActions-module__ListViewMetadata_0')}" style="display: none; position: relative; z-index: 1;">
+                          <h3 id="bookmarks-count" class="${cls('Metadata-module__heading')}"></h3>
+                          <div role="toolbar" aria-label="Actions" class="${cls('VisibleAndOverflowContainer-module__Box_0')}" style="gap: var(--base-size-4);">
+                            <div class="${cls('VisibleItems-module__Box_1')}" style="gap: var(--base-size-4);">
+                              <div data-action-bar-item="spinner" class="${cls('VisibleItem-module__Box_0')}"></div>
+                              <div data-action-bar-item="sort-by" class="${cls('VisibleItem-module__Box_0')}" style="position: relative;">
+                                <button type="button" id="bookmarks-sort-button" aria-haspopup="true" aria-expanded="false" class="${cls('prc-Button-ButtonBase')}" data-loading="false" data-size="medium" data-variant="invisible">
+                                  <span data-component="buttonContent" class="${cls('prc-Button-ButtonContent')}">
+                                    <span data-component="leadingVisual" class="${clsAll('prc-Button-Visual', 'prc-Button-VisualWrap')}">
                                       <svg aria-hidden="true" focusable="false" class="octicon octicon-sort-desc" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" style="display: inline-block; overflow: visible; vertical-align: text-bottom;">
                                         <path d="M0 4.25a.75.75 0 0 1 .75-.75h7.5a.75.75 0 0 1 0 1.5H.75A.75.75 0 0 1 0 4.25Zm0 4a.75.75 0 0 1 .75-.75h4.5a.75.75 0 0 1 0 1.5H.75A.75.75 0 0 1 0 8.25Zm0 4a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5H.75a.75.75 0 0 1-.75-.75ZM13.5 10h2.25a.25.25 0 0 1 .177.427l-3 3a.25.25 0 0 1-.354 0l-3-3A.25.25 0 0 1 9.75 10H12V3.75a.75.75 0 0 1 1.5 0V10Z"></path>
                                       </svg>
                                     </span>
-                                    <span data-component="text" class="prc-Button-Label-FWkx3">
+                                    <span data-component="text" class="${cls('prc-Button-Label')}">
                                       <span class="sr-only">Sort by </span>
                                       <span id="bookmarks-sort-label">Updated</span>
                                     </span>
-                                    <span data-component="trailingAction" class="prc-Button-Visual-YNt2F prc-Button-VisualWrap-E4cnq">
+                                    <span data-component="trailingAction" class="${clsAll('prc-Button-Visual', 'prc-Button-VisualWrap')}">
                                       <svg aria-hidden="true" focusable="false" class="octicon octicon-triangle-down" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" style="display: inline-block; overflow: visible; vertical-align: text-bottom;">
                                         <path d="m4.427 7.427 3.396 3.396a.25.25 0 0 0 .354 0l3.396-3.396A.25.25 0 0 0 11.396 7H4.604a.25.25 0 0 0-.177.427Z"></path>
                                       </svg>
                                     </span>
                                   </span>
                                 </button>
-                                <ul id="bookmarks-sort-menu" class="prc-ActionList-ActionList-rPFF2" role="menu" aria-labelledby="bookmarks-sort-button" data-dividers="false" data-variant="inset" style="display: none; position: absolute; z-index: 100; background: var(--overlay-bgColor); border-radius: 12px; box-shadow: rgba(209, 217, 224, 0.5) 0px 0px 0px 1px, rgba(37, 41, 46, 0.04) 0px 6px 12px -3px, rgba(37, 41, 46, 0.12) 0px 6px 18px 0px; min-width: 192px; margin-top: 4px;">
-                                  <li class="prc-ActionList-Group-lMIPQ" role="none">
-                                    <div role="presentation" aria-hidden="true" data-variant="subtle" data-component="GroupHeadingWrap" class="prc-ActionList-GroupHeadingWrap-laXcX" style="padding: 6px 16px; margin: 0;"><span class="prc-ActionList-GroupHeading-STzxi" style="font-size: 12px; font-weight: 600; color: var(--fgColor-muted);">Sort by</span></div>
-                                    <ul role="group" class="prc-ActionList-GroupList-V5B3-">
-                                      <li role="menuitemradio" class="prc-ActionList-ActionListItem-So4vC" data-sort-criteria="updated" aria-checked="true">
-                                        <div class="prc-ActionList-ActionListContent-KBb8-" data-size="medium">
-                                          <span class="prc-ActionList-LeadingAction-hbWbh prc-ActionList-VisualWrap-bdCsS">
+                                <ul id="bookmarks-sort-menu" class="${cls('prc-ActionList-ActionList')}" role="menu" aria-labelledby="bookmarks-sort-button" data-dividers="false" data-variant="inset" style="display: none; position: absolute; z-index: 100; background: var(--overlay-bgColor); border-radius: 12px; box-shadow: rgba(209, 217, 224, 0.5) 0px 0px 0px 1px, rgba(37, 41, 46, 0.04) 0px 6px 12px -3px, rgba(37, 41, 46, 0.12) 0px 6px 18px 0px; min-width: 192px; margin-top: 4px;">
+                                  <li class="${cls('prc-ActionList-Group')}" role="none">
+                                    <div role="presentation" aria-hidden="true" data-variant="subtle" data-component="GroupHeadingWrap" class="${cls('prc-ActionList-GroupHeadingWrap')}" style="padding: 6px 16px; margin: 0;"><span class="${cls('prc-ActionList-GroupHeading')}" style="font-size: 12px; font-weight: 600; color: var(--fgColor-muted);">Sort by</span></div>
+                                    <ul role="group" class="${cls('prc-ActionList-GroupList')}">
+                                      <li role="menuitemradio" class="${cls('prc-ActionList-ActionListItem')}" data-sort-criteria="updated" aria-checked="true">
+                                        <div class="${cls('prc-ActionList-ActionListContent')}" data-size="medium">
+                                          <span class="${clsAll('prc-ActionList-LeadingAction', 'prc-ActionList-VisualWrap')}">
                                             <svg aria-hidden="true" focusable="false" class="octicon octicon-check" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" style="display: inline-block; overflow: visible; vertical-align: text-bottom;">
                                               <path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"></path>
                                             </svg>
                                           </span>
-                                          <span class="prc-ActionList-ActionListSubContent-gKsFp">
-                                            <span class="prc-ActionList-ItemLabel-81ohH">Last updated</span>
+                                          <span class="${cls('prc-ActionList-ActionListSubContent')}">
+                                            <span class="${cls('prc-ActionList-ItemLabel')}">Last updated</span>
                                           </span>
                                         </div>
                                       </li>
-                                      <li role="menuitemradio" class="prc-ActionList-ActionListItem-So4vC" data-sort-criteria="bookmarked" aria-checked="false">
-                                        <div class="prc-ActionList-ActionListContent-KBb8-" data-size="medium">
-                                          <span class="prc-ActionList-LeadingAction-hbWbh prc-ActionList-VisualWrap-bdCsS">
+                                      <li role="menuitemradio" class="${cls('prc-ActionList-ActionListItem')}" data-sort-criteria="bookmarked" aria-checked="false">
+                                        <div class="${cls('prc-ActionList-ActionListContent')}" data-size="medium">
+                                          <span class="${clsAll('prc-ActionList-LeadingAction', 'prc-ActionList-VisualWrap')}">
                                             <svg aria-hidden="true" focusable="false" class="octicon octicon-check" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" style="display: inline-block; overflow: visible; vertical-align: text-bottom;">
                                               <path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"></path>
                                             </svg>
                                           </span>
-                                          <span class="prc-ActionList-ActionListSubContent-gKsFp">
-                                            <span class="prc-ActionList-ItemLabel-81ohH">Bookmarked on</span>
+                                          <span class="${cls('prc-ActionList-ActionListSubContent')}">
+                                            <span class="${cls('prc-ActionList-ItemLabel')}">Bookmarked on</span>
                                           </span>
                                         </div>
                                       </li>
-                                      <li role="menuitemradio" class="prc-ActionList-ActionListItem-So4vC" data-sort-criteria="repo" aria-checked="false">
-                                        <div class="prc-ActionList-ActionListContent-KBb8-" data-size="medium">
-                                          <span class="prc-ActionList-LeadingAction-hbWbh prc-ActionList-VisualWrap-bdCsS">
+                                      <li role="menuitemradio" class="${cls('prc-ActionList-ActionListItem')}" data-sort-criteria="repo" aria-checked="false">
+                                        <div class="${cls('prc-ActionList-ActionListContent')}" data-size="medium">
+                                          <span class="${clsAll('prc-ActionList-LeadingAction', 'prc-ActionList-VisualWrap')}">
                                             <svg aria-hidden="true" focusable="false" class="octicon octicon-check" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" style="display: inline-block; overflow: visible; vertical-align: text-bottom;">
                                               <path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"></path>
                                             </svg>
                                           </span>
-                                          <span class="prc-ActionList-ActionListSubContent-gKsFp">
-                                            <span class="prc-ActionList-ItemLabel-81ohH">Repository</span>
+                                          <span class="${cls('prc-ActionList-ActionListSubContent')}">
+                                            <span class="${cls('prc-ActionList-ItemLabel')}">Repository</span>
                                           </span>
                                         </div>
                                       </li>
                                     </ul>
                                   </li>
-                                  <li class="prc-ActionList-Divider-taVfb" aria-hidden="true" data-component="ActionList.Divider"></li>
-                                  <li class="prc-ActionList-Group-lMIPQ" role="none">
-                                    <div role="presentation" aria-hidden="true" data-variant="subtle" data-component="GroupHeadingWrap" class="prc-ActionList-GroupHeadingWrap-laXcX" style="padding: 6px 16px; margin: 0;"><span class="prc-ActionList-GroupHeading-STzxi" style="font-size: 12px; font-weight: 600; color: var(--fgColor-muted);">Order</span></div>
-                                    <ul role="group" class="prc-ActionList-GroupList-V5B3-">
-                                      <li role="menuitemradio" class="prc-ActionList-ActionListItem-So4vC" data-sort-order="asc" aria-checked="false">
-                                        <div class="prc-ActionList-ActionListContent-KBb8-" data-size="medium">
-                                          <span class="prc-ActionList-Spacer-4tR2m"></span>
-                                          <span class="prc-ActionList-LeadingAction-hbWbh prc-ActionList-VisualWrap-bdCsS">
-                                            <svg aria-hidden="true" focusable="false" class="octicon octicon-check prc-ActionList-SingleSelectCheckmark-zMd8d" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" style="display: inline-block; overflow: visible; vertical-align: text-bottom;">
+                                  <li class="${cls('prc-ActionList-Divider')}" aria-hidden="true" data-component="ActionList.Divider"></li>
+                                  <li class="${cls('prc-ActionList-Group')}" role="none">
+                                    <div role="presentation" aria-hidden="true" data-variant="subtle" data-component="GroupHeadingWrap" class="${cls('prc-ActionList-GroupHeadingWrap')}" style="padding: 6px 16px; margin: 0;"><span class="${cls('prc-ActionList-GroupHeading')}" style="font-size: 12px; font-weight: 600; color: var(--fgColor-muted);">Order</span></div>
+                                    <ul role="group" class="${cls('prc-ActionList-GroupList')}">
+                                      <li role="menuitemradio" class="${cls('prc-ActionList-ActionListItem')}" data-sort-order="asc" aria-checked="false">
+                                        <div class="${cls('prc-ActionList-ActionListContent')}" data-size="medium">
+                                          <span class="${cls('prc-ActionList-Spacer')}"></span>
+                                          <span class="${clsAll('prc-ActionList-LeadingAction', 'prc-ActionList-VisualWrap')}">
+                                            <svg aria-hidden="true" focusable="false" class="octicon octicon-check ${cls('prc-ActionList-SingleSelectCheckmark')}" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" style="display: inline-block; overflow: visible; vertical-align: text-bottom;">
                                               <path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"></path>
                                             </svg>
                                           </span>
-                                          <span class="prc-ActionList-LeadingVisual-NBr28 prc-ActionList-VisualWrap-bdCsS">
+                                          <span class="${clsAll('prc-ActionList-LeadingVisual', 'prc-ActionList-VisualWrap')}">
                                             <svg aria-hidden="true" focusable="false" class="octicon octicon-sort-asc" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" style="display: inline-block; overflow: visible; vertical-align: text-bottom;">
                                               <path d="m12.927 2.573 3 3A.25.25 0 0 1 15.75 6H13.5v6.75a.75.75 0 0 1-1.5 0V6H9.75a.25.25 0 0 1-.177-.427l3-3a.25.25 0 0 1 .354 0ZM0 12.25a.75.75 0 0 1 .75-.75h7.5a.75.75 0 0 1 0 1.5H.75a.75.75 0 0 1-.75-.75Zm0-4a.75.75 0 0 1 .75-.75h4.5a.75.75 0 0 1 0 1.5H.75A.75.75 0 0 1 0 8.25Zm0-4a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5H.75A.75.75 0 0 1 0 4.25Z"></path>
                                             </svg>
                                           </span>
-                                          <span class="prc-ActionList-ActionListSubContent-gKsFp">
-                                            <span class="prc-ActionList-ItemLabel-81ohH" id="order-asc-label">Oldest</span>
+                                          <span class="${cls('prc-ActionList-ActionListSubContent')}">
+                                            <span class="${cls('prc-ActionList-ItemLabel')}" id="order-asc-label">Oldest</span>
                                           </span>
                                         </div>
                                       </li>
-                                      <li role="menuitemradio" class="prc-ActionList-ActionListItem-So4vC" data-sort-order="desc" aria-checked="true">
-                                        <div class="prc-ActionList-ActionListContent-KBb8-" data-size="medium">
-                                          <span class="prc-ActionList-Spacer-4tR2m"></span>
-                                          <span class="prc-ActionList-LeadingAction-hbWbh prc-ActionList-VisualWrap-bdCsS">
-                                            <svg aria-hidden="true" focusable="false" class="octicon octicon-check prc-ActionList-SingleSelectCheckmark-zMd8d" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" style="display: inline-block; overflow: visible; vertical-align: text-bottom;">
+                                      <li role="menuitemradio" class="${cls('prc-ActionList-ActionListItem')}" data-sort-order="desc" aria-checked="true">
+                                        <div class="${cls('prc-ActionList-ActionListContent')}" data-size="medium">
+                                          <span class="${cls('prc-ActionList-Spacer')}"></span>
+                                          <span class="${clsAll('prc-ActionList-LeadingAction', 'prc-ActionList-VisualWrap')}">
+                                            <svg aria-hidden="true" focusable="false" class="octicon octicon-check ${cls('prc-ActionList-SingleSelectCheckmark')}" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" style="display: inline-block; overflow: visible; vertical-align: text-bottom;">
                                               <path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"></path>
                                             </svg>
                                           </span>
-                                          <span class="prc-ActionList-LeadingVisual-NBr28 prc-ActionList-VisualWrap-bdCsS">
+                                          <span class="${clsAll('prc-ActionList-LeadingVisual', 'prc-ActionList-VisualWrap')}">
                                             <svg aria-hidden="true" focusable="false" class="octicon octicon-sort-desc" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" style="display: inline-block; overflow: visible; vertical-align: text-bottom;">
                                               <path d="M0 4.25a.75.75 0 0 1 .75-.75h7.5a.75.75 0 0 1 0 1.5H.75A.75.75 0 0 1 0 4.25Zm0 4a.75.75 0 0 1 .75-.75h4.5a.75.75 0 0 1 0 1.5H.75A.75.75 0 0 1 0 8.25Zm0 4a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5H.75a.75.75 0 0 1-.75-.75ZM13.5 10h2.25a.25.25 0 0 1 .177.427l-3 3a.25.25 0 0 1-.354 0l-3-3A.25.25 0 0 1 9.75 10H12V3.75a.75.75 0 0 1 1.5 0V10Z"></path>
                                             </svg>
                                           </span>
-                                          <span class="prc-ActionList-ActionListSubContent-gKsFp">
-                                            <span class="prc-ActionList-ItemLabel-81ohH" id="order-desc-label">Newest</span>
+                                          <span class="${cls('prc-ActionList-ActionListSubContent')}">
+                                            <span class="${cls('prc-ActionList-ItemLabel')}" id="order-desc-label">Newest</span>
                                           </span>
                                         </div>
                                       </li>
@@ -439,7 +577,7 @@ function createBookmarksViewTemplate() {
                         <div id="bookmarks-empty" class="blankslate" role="region" aria-live="polite" aria-atomic="true" style="display: none;">
                           <h3 class="blankslate-heading">No bookmarked issues</h3>
                         </div>
-                        <div id="bookmarks-list" class="ListView-module__ul--A_8jF" data-listview-component="items-list" data-density="default" tabindex="-1">
+                        <div id="bookmarks-list" class="${cls('ListView-module__ul')}" data-listview-component="items-list" data-density="default" tabindex="-1">
                         </div>
                       </div>
                     </div>
@@ -719,31 +857,31 @@ function renderIssueItem(issue) {
 
   // Create wrapper structure matching application-main.html
   const wrapper = document.createElement('div');
-  wrapper.className = 'ListItems-module__listItem--KRcR0';
+  wrapper.className = cls('ListItems-module__listItem');
 
   const row = document.createElement('div');
-  row.className = 'IssueRow-module__row--pHXv5';
+  row.className = cls('IssueRow-module__row');
 
   const li = document.createElement('li');
-  li.className = 'ListItem-module__listItem--k4eMk';
+  li.className = cls('ListItem-module__listItem');
   li.setAttribute('role', 'listitem');
   li.setAttribute('tabindex', '0');
   li.setAttribute('data-issue-id', `${repoName}#${issue.number}`);
 
   // Title section
   const titleContainer = document.createElement('div');
-  titleContainer.className = 'Title-module__container--XD9YG';
+  titleContainer.className = cls('Title-module__container');
   titleContainer.setAttribute('data-listview-item-title-container', 'true');
 
   const heading = document.createElement('h4');
-  heading.className = 'Title-module__heading--s7YnL IssuePullRequestTitle-module__ListItemTitle_0--ORbH2';
+  heading.className = clsAll('Title-module__heading', 'IssuePullRequestTitle-module__ListItemTitle_0');
 
   const titleSpan = document.createElement('span');
-  titleSpan.className = 'Text__StyledText-sc-1klmep6-0 prc-Text-Text-0ima0';
+  titleSpan.className = clsAll('Text__StyledText-sc', 'prc-Text-Text');
 
   const titleLink = document.createElement('a');
   titleLink.href = issue.html_url;
-  titleLink.className = 'IssuePullRequestTitle-module__ListItemTitle_1--FWLq8';
+  titleLink.className = cls('IssuePullRequestTitle-module__ListItemTitle_1');
   titleLink.setAttribute('data-testid', 'issue-pr-title-link');
   titleLink.setAttribute('tabindex', '-1');
   titleLink.target = '_blank';
@@ -756,17 +894,17 @@ function renderIssueItem(issue) {
 
   // Leading content (status icon)
   const leadingContent = document.createElement('div');
-  leadingContent.className = 'LeadingContent-module__container--cui6v IssueItem-module__leadingContent--s16iU';
+  leadingContent.className = clsAll('LeadingContent-module__container', 'IssueItem-module__leadingContent');
 
   const outer = document.createElement('div');
-  outer.className = 'LeadingVisual-module__outer--qS9Ac';
+  outer.className = cls('LeadingVisual-module__outer');
   outer.setAttribute('data-testid', 'list-row-state-icon');
   outer.style.marginTop = '14px';
 
   const middle = document.createElement('div');
 
   const inner = document.createElement('div');
-  inner.className = 'LeadingVisual-module__inner--GeEeG';
+  inner.className = cls('LeadingVisual-module__inner');
   inner.style.width = '16px';
   inner.style.height = '16px';
 
@@ -785,27 +923,27 @@ function renderIssueItem(issue) {
 
   // Main content section
   const mainContent = document.createElement('div');
-  mainContent.className = 'MainContent-module__container--NyRpm';
+  mainContent.className = cls('MainContent-module__container');
 
   const mainInner = document.createElement('div');
-  mainInner.className = 'MainContent-module__inner--qD0Pb';
+  mainInner.className = cls('MainContent-module__inner');
 
   const description = document.createElement('div');
-  description.className = 'Description-module__container--Zwqe8';
+  description.className = cls('Description-module__container');
 
   const descItem = document.createElement('div');
-  descItem.className = 'DescriptionItem-module__default--rAYpS IssuePullRequestDescription-module__descriptionItem--ndXf0';
+  descItem.className = clsAll('DescriptionItem-module__default', 'IssuePullRequestDescription-module__descriptionItem');
   descItem.setAttribute('data-testid', 'list-row-repo-name-and-number');
 
   // Repo and number
   const repoContainer = document.createElement('div');
-  repoContainer.className = 'IssueItem-module__defaultRepoContainer--oNwmq';
+  repoContainer.className = cls('IssueItem-module__defaultRepoContainer');
   const repoSpan = document.createElement('span');
   repoSpan.textContent = repoName;
   repoContainer.appendChild(repoSpan);
 
   const numberDesc = document.createElement('span');
-  numberDesc.className = 'IssueItem-module__defaultNumberDescription--_0xgU';
+  numberDesc.className = cls('IssueItem-module__defaultNumberDescription');
   const numberSpan = document.createElement('span');
   numberSpan.textContent = `#${issue.number}`;
   numberDesc.appendChild(numberSpan);
@@ -813,14 +951,14 @@ function renderIssueItem(issue) {
 
   // Created timestamp
   const createdContainer = document.createElement('div');
-  createdContainer.className = 'IssueItem-module__timestampContainer--koCC8';
+  createdContainer.className = cls('IssueItem-module__timestampContainer');
   createdContainer.setAttribute('data-testid', 'created-at');
 
   const dot1 = document.createElement('span');
   dot1.textContent = '· ';
 
   const userLink = document.createElement('a');
-  userLink.className = 'IssueItem-module__authorCreatedLink--kzskP prc-Link-Link-85e08';
+  userLink.className = clsAll('IssueItem-module__authorCreatedLink', 'prc-Link-Link');
   userLink.href = issue.user?.html_url || '#';
   userLink.tabIndex = -1;
   userLink.target = '_blank';
@@ -841,13 +979,13 @@ function renderIssueItem(issue) {
 
   // Updated timestamp
   const updatedContainer = document.createElement('div');
-  updatedContainer.className = 'IssueItem-module__timestampContainer--koCC8';
+  updatedContainer.className = cls('IssueItem-module__timestampContainer');
   updatedContainer.setAttribute('data-testid', 'updated-at');
 
   updatedContainer.appendChild(document.createTextNode('· Updated '));
 
   const updatedTime = document.createElement('relative-time');
-  updatedTime.className = 'IssuePullRequestDescription-module__RelativeTime--lbeGP';
+  updatedTime.className = cls('IssuePullRequestDescription-module__RelativeTime');
   updatedTime.setAttribute('datetime', issue.updated_at);
   updatedTime.textContent = formatDate(issue.updated_at);
 
@@ -863,14 +1001,14 @@ function renderIssueItem(issue) {
 
   // Metadata section (comments)
   const metadataContainer = document.createElement('div');
-  metadataContainer.className = 'MetadataContainer-module__container--nU0s9 IssueItem-module__ListItem_0--ni8FY';
+  metadataContainer.className = clsAll('MetadataContainer-module__container', 'IssueItem-module__ListItem_0');
 
   const commentMetadata = document.createElement('div');
-  commentMetadata.className = 'Metadata-module__metadata--ODMG0 Metadata-module__secondary--1te4w IssueItemMetadata-module__ListItemMetadata_0--iaEA1';
+  commentMetadata.className = clsAll('Metadata-module__metadata', 'Metadata-module__secondary', 'IssueItemMetadata-module__ListItemMetadata_0');
   commentMetadata.setAttribute('data-testid', 'list-row-comments');
 
   const commentCountContainer = document.createElement('div');
-  commentCountContainer.className = 'IssueItem-module__commentCountContainer--YUcKU';
+  commentCountContainer.className = cls('IssueItem-module__commentCountContainer');
 
   commentCountContainer.appendChild(getIcon('comment'));
 
@@ -1523,7 +1661,10 @@ function isIssuesPage() {
 function initIssuesPage() {
   console.log('[Bookmarked] Initializing content script for /issues page');
 
-  // Setup templates
+  // Discover current CSS class hashes from native GitHub DOM (must run before setupTemplates)
+  discoverCssClasses();
+
+  // Setup templates (uses discovered classes)
   setupTemplates();
 
   // Handle direct navigation to /issues/bookmarked (which results in 404) via redirect to /issues
@@ -1592,7 +1733,10 @@ function setupNavigationWatcher() {
       console.log('[Bookmarked] SPA navigation to /issues detected');
       // Debounce to let React finish rendering
       clearTimeout(navigationTimeout);
-      navigationTimeout = setTimeout(() => initIssuesPage(), 100);
+      navigationTimeout = setTimeout(() => {
+        discoverCssClasses();
+        initIssuesPage();
+      }, 100);
     }
   });
 
