@@ -88,6 +88,7 @@ registerCssClasses([
   'IssueItem-module__ListItem_0',
   'Metadata-module__metadata',
   'Metadata-module__secondary',
+  'Metadata-module__alignRight',
   'IssueItemMetadata-module__ListItemMetadata_0',
   'IssueItem-module__commentCountContainer',
 
@@ -954,10 +955,20 @@ function renderIssueItem(issue) {
   mainInner.appendChild(description);
   mainContent.appendChild(mainInner);
 
-  // Metadata section (comments)
+  // Metadata section — 3 fixed-width slots matching native layout:
+  // 1. Linked pull requests (empty placeholder)
+  // 2. Comment count
+  // 3. Assignees (empty placeholder, alignRight)
   const metadataContainer = document.createElement('div');
   metadataContainer.className = clsAll('MetadataContainer-module__container', 'IssueItem-module__ListItem_0');
 
+  // Slot 1: linked pull requests (always empty in bookmarked view)
+  const prMetadata = document.createElement('div');
+  prMetadata.className = clsAll('Metadata-module__metadata', 'Metadata-module__secondary', 'IssueItemMetadata-module__ListItemMetadata_0');
+  prMetadata.setAttribute('data-testid', 'list-row-linked-pull-requests');
+  metadataContainer.appendChild(prMetadata);
+
+  // Slot 2: comment count
   const commentMetadata = document.createElement('div');
   commentMetadata.className = clsAll('Metadata-module__metadata', 'Metadata-module__secondary', 'IssueItemMetadata-module__ListItemMetadata_0');
   commentMetadata.setAttribute('data-testid', 'list-row-comments');
@@ -978,8 +989,13 @@ function renderIssueItem(issue) {
   commentCountContainer.appendChild(countSpan);
   commentCountContainer.appendChild(srOnlySpan);
   commentMetadata.appendChild(commentCountContainer);
-
   metadataContainer.appendChild(commentMetadata);
+
+  // Slot 3: assignees (always empty in bookmarked view)
+  const assigneeMetadata = document.createElement('div');
+  assigneeMetadata.className = clsAll('Metadata-module__metadata', 'Metadata-module__secondary', 'Metadata-module__alignRight', 'IssueItemMetadata-module__ListItemMetadata_0');
+  assigneeMetadata.setAttribute('data-testid', 'list-row-assignees');
+  metadataContainer.appendChild(assigneeMetadata);
 
   // Assemble all parts
   li.appendChild(titleContainer);
