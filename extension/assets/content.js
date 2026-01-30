@@ -87,6 +87,7 @@ if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
     'prc-Button-IconButton',
   ]);
 
+
   // Extract issue data from current page
   function getIssueData() {
     const urlMatch = window.location.pathname.match(/^\/([^/]+)\/([^/]+)\/issues\/(\d+)/);

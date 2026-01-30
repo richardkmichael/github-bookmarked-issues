@@ -138,7 +138,7 @@ function discoverCssClasses() {
     console.log(`[Bookmarked] Discovered ${discovered} CSS classes from stylesheets`);
   }
   if (pending.size > 0) {
-    console.warn(`[Bookmarked] ${pending.size} CSS classes not found in stylesheets`);
+    console.log(`[Bookmarked] ${pending.size} CSS classes not found in stylesheets`);
   }
 }
 

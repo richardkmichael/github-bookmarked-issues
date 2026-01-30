@@ -66,11 +66,11 @@ registerCssClasses([
   'ListItems-module__listItem',
   'IssueRow-module__row',
   'ListItem-module__listItem',
-  ['Title-module__container', 'display', '-webkit-box'],
+  ['Title-module__container', 'display', 'block'],
   'Title-module__heading',
   'IssuePullRequestTitle-module__ListItemTitle_0',
   'IssuePullRequestTitle-module__ListItemTitle_1',
-  ['LeadingContent-module__container', 'height', '100%'],
+  ['LeadingContent-module__container', 'height', ''],
   'IssueItem-module__leadingContent',
   'LeadingVisual-module__outer',
   'LeadingVisual-module__inner',
@@ -1488,6 +1488,11 @@ function getMainContent() {
 
 // Show the bookmarks view
 function showBookmarksView() {
+  // Discover CSS class hashes and build templates lazily (not at init time)
+  // so that GitHub's stylesheets are fully loaded by the time the user clicks Bookmarked.
+  discoverCssClasses();
+  setupTemplates();
+
   // Use History API if not already at /issues/bookmarked
   if (window.location.pathname !== '/issues/bookmarked') {
     history.pushState(null, null, '/issues/bookmarked');
@@ -1616,12 +1621,6 @@ function isIssuesPage() {
 function initIssuesPage() {
   console.log('[Bookmarked] Initializing content script for /issues page');
 
-  // Discover current CSS class hashes from native GitHub DOM (must run before setupTemplates)
-  discoverCssClasses();
-
-  // Setup templates (uses discovered classes)
-  setupTemplates();
-
   // Handle direct navigation to /issues/bookmarked (which results in 404) via redirect to /issues
   // and a flag to auto-show Bookmarked view
   if (window.location.pathname === '/issues/bookmarked' && is404Page()) {
@@ -1689,7 +1688,6 @@ function setupNavigationWatcher() {
       // Debounce to let React finish rendering
       clearTimeout(navigationTimeout);
       navigationTimeout = setTimeout(() => {
-        discoverCssClasses();
         initIssuesPage();
       }, 100);
     }

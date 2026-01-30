@@ -27,6 +27,9 @@ This extension:
 - Adds a MutationObserver on `div.application-main` (outside the React app) to monitor the React app
   for re-rendering, to re-insert the custom view after re-render
 
+Read @GITHUB_OPERATION.md for details of how the github.com React site operates.  The details are
+helpful when debugging or making changes to the extension.
+
 # Navigation
 
 **Critical for development and debugging**:
