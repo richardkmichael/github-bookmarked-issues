@@ -87,7 +87,7 @@ registerCssClasses([
   'MetadataContainer-module__container',
   'IssueItem-module__ListItem_0',
   'Metadata-module__metadata',
-  'Metadata-module__secondary',
+  ['Metadata-module__secondary', 'selectorContains', 'Metadata-module__metadata'],
   'Metadata-module__alignRight',
   'IssueItemMetadata-module__ListItemMetadata_0',
   'IssueItem-module__commentCountContainer',

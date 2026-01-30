@@ -48,13 +48,15 @@ if (typeof CSS_CLASSES !== 'undefined') {
 }
 // Use var (not const) so the second execution doesn't throw a SyntaxError
 var CSS_CLASSES = CSS_CLASSES || new Map();
-// Discriminators for ambiguous prefixes: prefix -> { property, value }
+// Discriminators for ambiguous prefixes: prefix -> { type, property, value }
+// Types: 'css' (default) checks rule.style.getPropertyValue(property) === value
+//        'selector' checks rule.selectorText.includes(value)
 var CSS_DISCRIMINATORS = CSS_DISCRIMINATORS || new Map();
 
 // Register CSS class prefixes for discovery.
-// Each entry is either a string (prefix) or a tuple [prefix, property, value]
-// where the property/value pair disambiguates when multiple stylesheet rules
-// share the same prefix (e.g., different React components with same module name).
+// Each entry is either a string (prefix) or a tuple:
+//   [prefix, property, value] — CSS property discriminator (checks rule.style)
+//   [prefix, 'selectorContains', substring] — selector discriminator (checks rule.selectorText)
 function registerCssClasses(keys) {
   for (const entry of keys) {
     const key = Array.isArray(entry) ? entry[0] : entry;
@@ -62,7 +64,8 @@ function registerCssClasses(keys) {
       CSS_CLASSES.set(key, key);
     }
     if (Array.isArray(entry)) {
-      CSS_DISCRIMINATORS.set(key, { property: entry[1], value: entry[2] });
+      const type = entry[1] === 'selectorContains' ? 'selector' : 'css';
+      CSS_DISCRIMINATORS.set(key, { type, property: entry[1], value: entry[2] });
     }
   }
 }
@@ -118,9 +121,14 @@ function discoverCssClasses() {
 
   // Resolve discriminated keys by picking the candidate matching the discriminator
   for (const key of discriminated) {
-    const { property, value } = CSS_DISCRIMINATORS.get(key);
+    const disc = CSS_DISCRIMINATORS.get(key);
     const matches = candidates.get(key);
-    const winner = matches.find(c => c.rule.style.getPropertyValue(property) === value);
+    let winner;
+    if (disc.type === 'selector') {
+      winner = matches.find(c => c.selectorText.includes(disc.value));
+    } else {
+      winner = matches.find(c => c.rule.style.getPropertyValue(disc.property) === disc.value);
+    }
     if (winner) {
       CSS_CLASSES.set(key, winner.className);
       pending.delete(key);
@@ -130,7 +138,7 @@ function discoverCssClasses() {
       CSS_CLASSES.set(key, matches[0].className);
       pending.delete(key);
       discovered++;
-      console.warn(`[Bookmarked] ${key}: discriminator ${property}=${value} not found, using first match`);
+      console.log(`[Bookmarked] ${key}: discriminator not found, using first match`);
     }
   }
 
@@ -167,13 +175,12 @@ function scanRules(rules, simple, discriminated, keyRegexes, candidates) {
       }
     }
 
-    // Check discriminated keys (collect all candidates)
+    // Check discriminated keys (collect all candidates, including compound selectors)
     for (const key of discriminated) {
       if (!rule.selectorText.includes(key)) continue;
       const match = rule.selectorText.match(keyRegexes.get(key));
-      if (match && rule.selectorText === match[0]) {
-        // Only consider rules where the selector IS the class (not compound selectors)
-        candidates.get(key).push({ className: match[0].slice(1), rule });
+      if (match) {
+        candidates.get(key).push({ className: match[0].slice(1), selectorText: rule.selectorText, rule });
       }
     }
   }
