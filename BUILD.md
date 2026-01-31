@@ -171,14 +171,14 @@ The script outputs a `GITHUB_AUTH_STATE` value to add to `.env`. Sessions expire
 Dev builds include git commit info in `version_name` (Chrome only, visible in `chrome://extensions`).
 Firefox does not support `version_name`; it warns about unknown manifest properties at runtime.
 
-| Build Type                 | version_name Example                      |
-|----------------------------|-------------------------------------------|
+| Build Type                 | version_name Example                       |
+|----------------------------|--------------------------------------------|
 | Release (CI with tag)      | `1.0.0-rc1` (from tag `v1.0.0-rc1`)       |
-| Release (local tagged)     | `1.0.0-rc1` (detected via git describe)  |
-| Dev (clean)                | `1.0.0-dev+abc1234`                       |
-| Dev (uncommitted changes)  | `1.0.0-dev+abc1234-dirty:worktree-name`   |
+| Release (local tagged)     | `1.0.0-rc1` (detected via git describe)    |
+| Dev (clean)                | `1.0.0-development_abc1234`                |
+| Dev (uncommitted changes)  | `1.0.0-development_abc1234-dirty`          |
 
-CI release builds receive the tag name via `VERSION_TAG` environment variable. Local builds detect tags via `git describe --exact-match HEAD`. The dirty suffix includes the worktree directory name to distinguish between multiple worktrees.
+CI release builds receive the tag name via `VERSION_TAG` environment variable. Local builds detect tags via `git describe --exact-match HEAD`. Dev builds include the branch name and short commit hash, with a `-dirty` suffix if there are uncommitted changes to `extension/`.
 
 ## Dependency Information
 
