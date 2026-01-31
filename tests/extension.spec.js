@@ -1374,4 +1374,222 @@ test.describe('', () => {
       await testPage.close();
     });
   });
+
+  test.describe('Visual > bookmarked view', { tag: ['@visual', '@auth-session'] }, () => {
+    test.skip(() => !!sessionSkipReason, sessionSkipReason || 'GitHub session auth unavailable');
+
+    let authContext;
+    let authExtensionId;
+
+    async function addAuthBookmarks(bookmarks) {
+      const tempPage = await authContext.newPage();
+      await tempPage.goto(`chrome-extension://${authExtensionId}/assets/options.html`);
+      await tempPage.evaluate((bookmarks) => {
+        return new Promise((resolve) => {
+          chrome.storage.sync.set({ bookmarked_issues: bookmarks }, resolve);
+        });
+      }, bookmarks);
+      await tempPage.close();
+    }
+
+    async function clearAuthBookmarks() {
+      const tempPage = await authContext.newPage();
+      await tempPage.goto(`chrome-extension://${authExtensionId}/assets/options.html`);
+      await tempPage.evaluate(() => {
+        return new Promise((resolve) => {
+          chrome.storage.sync.remove('bookmarked_issues', resolve);
+        });
+      });
+      await tempPage.close();
+    }
+
+    test.beforeAll(async () => {
+      const auth = getGitHubAuth();
+      if (!auth) return;
+
+      authContext = await chromium.launchPersistentContext('', {
+        headless: false,
+        args: [
+          '--headless=new',
+          `--disable-extensions-except=${extensionPath}`,
+          `--load-extension=${extensionPath}`,
+        ],
+      });
+
+      if (auth.cookies) {
+        await authContext.addCookies(auth.cookies);
+      }
+
+      let [background] = authContext.serviceWorkers();
+      if (!background) {
+        background = await authContext.waitForEvent('serviceworker');
+      }
+      authExtensionId = background.url().split('/')[2];
+    });
+
+    test.afterAll(async () => {
+      if (authContext) {
+        await authContext.close();
+      }
+    });
+
+    test('bookmarked view with issues', async () => {
+      const bookmarks = makeBookmarks(TEST_ISSUES[0], TEST_ISSUES[2]);
+      await addAuthBookmarks(bookmarks);
+
+      const graphqlResponse = {
+        data: {
+          search: {
+            edges: [
+              {
+                node: {
+                  id: 'I_test1',
+                  number: 38673,
+                  title: 'Add visual regression testing support',
+                  createdAt: '2024-01-10T08:00:00Z',
+                  updatedAt: '2024-01-15T10:30:00Z',
+                  state: 'OPEN',
+                  author: { login: 'testauthor', name: 'Test Author' },
+                  repository: { name: 'playwright', owner: { login: 'microsoft' } },
+                  labels: { edges: [] },
+                  milestone: null,
+                  assignedActors: { edges: [] }
+                }
+              },
+              {
+                node: {
+                  id: 'I_test2',
+                  number: 100,
+                  title: 'Improve hydration performance',
+                  createdAt: '2023-08-31T12:00:00Z',
+                  updatedAt: '2024-01-12T09:00:00Z',
+                  state: 'CLOSED',
+                  author: { login: 'reactdev', name: 'React Dev' },
+                  repository: { name: 'react', owner: { login: 'facebook' } },
+                  labels: { edges: [] },
+                  milestone: null,
+                  assignedActors: { edges: [] }
+                }
+              }
+            ]
+          }
+        }
+      };
+
+      const secondaryResponse = {
+        data: {
+          nodes: [
+            { id: 'I_test1', state: 'OPEN', totalCommentsCount: 12 },
+            { id: 'I_test2', state: 'CLOSED', totalCommentsCount: 42 }
+          ]
+        }
+      };
+
+      const isExtensionQuery = (url) => {
+        if (!url.includes('IssueDashboardKnownViewPageQuery') && !url.includes('IssueRowSecondaryQuery')) {
+          return false;
+        }
+        const body = decodeURIComponent(url.split('body=')[1] || '');
+        return body.includes('microsoft/playwright') || body.includes('facebook/react');
+      };
+
+      await authContext.route('**/github.com/_graphql**', (route) => {
+        const url = route.request().url();
+        if (!isExtensionQuery(url)) {
+          route.continue();
+          return;
+        }
+        if (url.includes('IssueRowSecondaryQuery')) {
+          route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify(secondaryResponse)
+          });
+        } else {
+          route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify(graphqlResponse)
+          });
+        }
+      });
+
+      await authContext.route('**/api.github.com/repos/**', (route) => {
+        const url = route.request().url();
+        if (url.includes('microsoft/playwright/issues/38673')) {
+          route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+              number: 38673,
+              title: 'Add visual regression testing support',
+              html_url: 'https://github.com/microsoft/playwright/issues/38673',
+              url: 'https://api.github.com/repos/microsoft/playwright/issues/38673',
+              state: 'open',
+              created_at: '2024-01-10T08:00:00Z',
+              updated_at: '2024-01-15T10:30:00Z',
+              comments: 12
+            })
+          });
+        } else if (url.includes('facebook/react/issues/100')) {
+          route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+              number: 100,
+              title: 'Improve hydration performance',
+              html_url: 'https://github.com/facebook/react/issues/100',
+              url: 'https://api.github.com/repos/facebook/react/issues/100',
+              state: 'closed',
+              created_at: '2023-08-31T12:00:00Z',
+              updated_at: '2024-01-12T09:00:00Z',
+              comments: 42
+            })
+          });
+        } else {
+          route.continue();
+        }
+      });
+
+      const testPage = await authContext.newPage();
+      await testPage.goto('https://github.com/issues/created');
+      await testPage.waitForLoadState('domcontentloaded');
+
+      const bookmarksNav = testPage.locator('nav a:has-text("Bookmarked")');
+      await expect(bookmarksNav).toBeVisible({ timeout: 10000 });
+      await bookmarksNav.click();
+
+      await expect(testPage.locator('[data-issue-id]').first()).toBeVisible({ timeout: 15000 });
+
+      await testPage.evaluate(() => {
+        document.querySelectorAll('relative-time').forEach(el => {
+          el.textContent = 'Jan 15, 2024';
+        });
+      });
+
+      await expect(testPage.locator('[data-extension-bookmarks-container]')).toHaveScreenshot('bookmarked-view-with-issues.png');
+
+      await authContext.unroute('**/github.com/_graphql**');
+      await authContext.unroute('**/api.github.com/repos/**');
+      await testPage.close();
+    });
+
+    test('bookmarked view empty state', async () => {
+      await clearAuthBookmarks();
+
+      const testPage = await authContext.newPage();
+      await testPage.goto('https://github.com/issues/created');
+      await testPage.waitForLoadState('domcontentloaded');
+
+      const bookmarksNav = testPage.locator('nav a:has-text("Bookmarked")');
+      await expect(bookmarksNav).toBeVisible({ timeout: 10000 });
+      await bookmarksNav.click();
+
+      await expect(testPage.locator('#bookmarks-empty')).toBeVisible({ timeout: 15000 });
+
+      await expect(testPage.locator('[data-extension-bookmarks-container]')).toHaveScreenshot('bookmarked-view-empty.png');
+
+      await testPage.close();
+    });
+  });
 });
