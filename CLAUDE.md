@@ -339,6 +339,26 @@ function getIcon(name) {
 button.appendChild(getIcon('bookmark'));
 ```
 
+### Templates with Interpolated Strings
+
+`template.innerHTML` with a plain string (e.g., an SVG icon) does not trigger the web-ext linter.
+However, template literals with any `${...}` interpolation do — the linter flags every `innerHTML`
+assignment containing expressions, even on inert `<template>` elements where it is safe.
+
+Use `setTemplateHTML()` (defined in `content-issues-list.js`) for templates that need interpolation
+(e.g., `cls()` calls for CSS class names). It uses `DOMParser` internally, avoiding `innerHTML`:
+
+```javascript
+function createMyTemplate() {
+  const template = document.createElement('template');
+  template.id = 'my-template';
+  setTemplateHTML(template, `
+    <div class="${cls('Some-module__container')}">...</div>
+  `);
+  return template;
+}
+```
+
 ## Patterns to Avoid
 
 ### Don't: Use innerHTML for Dynamic Content
