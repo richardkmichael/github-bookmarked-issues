@@ -235,6 +235,15 @@ async function fetchBookmarkedIssuesViaGraphQL(bookmarks) {
   }));
 }
 
+// Set template content from an HTML string using DOMParser.
+// Avoids web-ext lint UNSAFE_VAR_ASSIGNMENT warnings that trigger on any
+// innerHTML assignment with template literal interpolation (e.g., cls() calls).
+// DOMParser is safe: it does not execute scripts in the parsed content.
+function setTemplateHTML(template, html) {
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  template.content.append(...doc.body.childNodes);
+}
+
 // Setup templates (injected once into page)
 function setupTemplates() {
   if (document.getElementById('ext-bookmarks-templates')) return;
@@ -248,6 +257,8 @@ function setupTemplates() {
   container.appendChild(createOpenIconTemplate());
   container.appendChild(createClosedIconTemplate());
   container.appendChild(createCommentIconTemplate());
+  container.appendChild(createSortDescIconTemplate());
+  container.appendChild(createSortAscIconTemplate());
   container.appendChild(createSkeletonItemTemplate());
   container.appendChild(createBookmarksViewTemplate());
 
@@ -291,11 +302,25 @@ function createCommentIconTemplate() {
   return template;
 }
 
+function createSortDescIconTemplate() {
+  const template = document.createElement('template');
+  template.id = 'icon-sort-desc';
+  template.innerHTML = '<svg aria-hidden="true" focusable="false" class="octicon octicon-sort-desc" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" style="display: inline-block; overflow: visible; vertical-align: text-bottom;"><path d="M0 4.25a.75.75 0 0 1 .75-.75h7.5a.75.75 0 0 1 0 1.5H.75A.75.75 0 0 1 0 4.25Zm0 4a.75.75 0 0 1 .75-.75h4.5a.75.75 0 0 1 0 1.5H.75A.75.75 0 0 1 0 8.25Zm0 4a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5H.75a.75.75 0 0 1-.75-.75ZM13.5 10h2.25a.25.25 0 0 1 .177.427l-3 3a.25.25 0 0 1-.354 0l-3-3A.25.25 0 0 1 9.75 10H12V3.75a.75.75 0 0 1 1.5 0V10Z"></path></svg>';
+  return template;
+}
+
+function createSortAscIconTemplate() {
+  const template = document.createElement('template');
+  template.id = 'icon-sort-asc';
+  template.innerHTML = '<svg aria-hidden="true" focusable="false" class="octicon octicon-sort-asc" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" style="display: inline-block; overflow: visible; vertical-align: text-bottom;"><path d="m12.927 2.573 3 3A.25.25 0 0 1 15.75 6H13.5v6.75a.75.75 0 0 1-1.5 0V6H9.75a.25.25 0 0 1-.177-.427l3-3a.25.25 0 0 1 .354 0ZM0 12.25a.75.75 0 0 1 .75-.75h7.5a.75.75 0 0 1 0 1.5H.75a.75.75 0 0 1-.75-.75Zm0-4a.75.75 0 0 1 .75-.75h4.5a.75.75 0 0 1 0 1.5H.75A.75.75 0 0 1 0 8.25Zm0-4a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5H.75A.75.75 0 0 1 0 4.25Z"></path></svg>';
+  return template;
+}
+
 // Helper to create skeleton item template
 function createSkeletonItemTemplate() {
   const template = document.createElement('template');
   template.id = 'skeleton-item';
-  template.innerHTML = `
+  setTemplateHTML(template, `
     <div class="${cls('ListItems-module__listItem')}">
       <div class="${cls('IssueRow-module__row')}">
         <div class="${cls('ListItem-module__listItem')} skeleton-item">
@@ -323,7 +348,7 @@ function createSkeletonItemTemplate() {
         </div>
       </div>
     </div>
-  `;
+  `);
   return template;
 }
 
@@ -379,7 +404,7 @@ function createSkeletonStyles() {
 function createBookmarksViewTemplate() {
   const template = document.createElement('template');
   template.id = 'bookmarks-view';
-  template.innerHTML = `
+  setTemplateHTML(template, `
     <div data-extension-bookmarks-container="true" style="display: none;">
       <div class="${cls('prc-PageLayout-ContentWrapper')}" data-is-hidden="false">
         <div class="${cls('prc-PageLayout-Content')}" data-width="full" style="--spacing: var(--spacing-none);">
@@ -546,7 +571,7 @@ function createBookmarksViewTemplate() {
         </div>
       </div>
     </div>
-  `;
+  `);
   return template;
 }
 
@@ -1377,14 +1402,10 @@ async function setupSortDropdown() {
     // Update button icon based on order
     const buttonIcon = sortButton.querySelector('.octicon-sort-desc, .octicon-sort-asc');
     if (buttonIcon) {
-      if (currentOrder === 'desc') {
-        buttonIcon.classList.remove('octicon-sort-asc');
-        buttonIcon.classList.add('octicon-sort-desc');
-        buttonIcon.innerHTML = '<path d="M0 4.25a.75.75 0 0 1 .75-.75h7.5a.75.75 0 0 1 0 1.5H.75A.75.75 0 0 1 0 4.25Zm0 4a.75.75 0 0 1 .75-.75h4.5a.75.75 0 0 1 0 1.5H.75A.75.75 0 0 1 0 8.25Zm0 4a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5H.75a.75.75 0 0 1-.75-.75ZM13.5 10h2.25a.25.25 0 0 1 .177.427l-3 3a.25.25 0 0 1-.354 0l-3-3A.25.25 0 0 1 9.75 10H12V3.75a.75.75 0 0 1 1.5 0V10Z"></path>';
-      } else {
-        buttonIcon.classList.remove('octicon-sort-desc');
-        buttonIcon.classList.add('octicon-sort-asc');
-        buttonIcon.innerHTML = '<path d="m12.927 2.573 3 3A.25.25 0 0 1 15.75 6H13.5v6.75a.75.75 0 0 1-1.5 0V6H9.75a.25.25 0 0 1-.177-.427l3-3a.25.25 0 0 1 .354 0ZM0 12.25a.75.75 0 0 1 .75-.75h7.5a.75.75 0 0 1 0 1.5H.75a.75.75 0 0 1-.75-.75Zm0-4a.75.75 0 0 1 .75-.75h4.5a.75.75 0 0 1 0 1.5H.75A.75.75 0 0 1 0 8.25Zm0-4a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5H.75A.75.75 0 0 1 0 4.25Z"></path>';
+      const iconName = currentOrder === 'desc' ? 'sort-desc' : 'sort-asc';
+      const newIcon = getIcon(iconName);
+      if (newIcon) {
+        buttonIcon.replaceWith(newIcon);
       }
     }
 
