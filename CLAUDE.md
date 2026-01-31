@@ -50,21 +50,22 @@ The custom Bookmarks view style must match the GitHub built-in style (CSS).
 
 # DOM Structure Requirements
 
-**CRITICAL**: The Bookmarks view markup must match GitHub's native view structure EXACTLY.
+The Bookmarks view markup must match GitHub's native view structure.
 
 ## Key Structural Pattern
 
-GitHub's issue list views follow this hierarchy:
+GitHub's issue list views follow this hierarchy (hash suffixes omitted — they change between
+deployments and are resolved at runtime by the CSS class discovery system):
 
 ```html
-<div class="Search-module__SearchContainer--CkrWX">
-  <div class="SearchBar-module__gap8--tZi0W...">
+<div class="Search-module__SearchContainer--{hash}">
+  <div class="SearchBar-module__gap8--{hash}...">
     <!-- Search inputs -->
   </div>
   <div>  <!-- Plain wrapper div (no class) -->
-    <div class="ListItems-module__listContainer--sgptj">
-      <div class="ListItems-module__listScopedCommand--GGPXX">
-        <div class="ListView-module__container--rxCWy">
+    <div class="ListItems-module__listContainer--{hash}">
+      <div class="ListItems-module__listScopedCommand--{hash}">
+        <div class="ListView-module__container--{hash}">
           <!-- List content -->
         </div>
       </div>
@@ -73,28 +74,56 @@ GitHub's issue list views follow this hierarchy:
 </div>
 ```
 
-**Why this matters:**
+Why this matters:
 - The list container MUST be nested inside the search container (not a sibling)
 - The plain wrapper `<div>` is required for proper spacing
 - GitHub's CSS applies spacing based on this exact hierarchy
 
-# Critical CSS Module Classes
+# CSS Module Classes
 
-These GitHub CSS module classes must be used exactly as shown:
+GitHub uses CSS modules with generated hash suffixes (e.g., `Search-module__SearchContainer--CkrWX`)
+that change between deployments.  The extension discovers current class names at runtime instead of
+hardcoding them.
 
-**Container Classes:**
-- `Search-module__SearchContainer--CkrWX` - Main search container
-- `ListItems-module__listContainer--sgptj` - List wrapper (provides border)
-- `ListView-module__container--rxCWy` - Inner list container
+## Discovery System (`shared.js`)
 
-**Search Input Classes:**
-- `FormControl` + `FormControl--fullWidth` - Wrapper
-- `FormControl-label` + `sr-only` - Label
-- `FormControl-input` + `Input-module__Box_4--DZrl_` - Input field
+1. Content scripts call `registerCssClasses()` with prefix keys (the stable part before the hash)
+2. At render time, `discoverCssClasses()` scans GitHub's stylesheets to resolve each prefix to the
+   current full class name
+3. Code uses `cls('prefix')` or `clsAll('prefix1', 'prefix2')` to get resolved class names
 
-**Results Header Classes:**
-- `Metadata-module__container--ydeM8` - Must use `display: flex` (NOT `block`)
-- `Metadata-module__heading--vvkcl` - Results count heading
+Example:
+```javascript
+// Registration (top of content-issues-list.js)
+registerCssClasses([
+  'Search-module__SearchContainer',
+  'ListItems-module__listContainer',
+  ['Title-module__container', 'display', 'block'],  // with CSS discriminator
+  ['Metadata-module__secondary', 'selectorContains', '.IssueItemMetadata'],  // with selector discriminator
+]);
+
+// Usage
+const container = document.createElement('div');
+container.className = cls('Search-module__SearchContainer');
+```
+
+## Discriminators
+
+Some prefixes are ambiguous — multiple CSS rules share the same module file name (e.g.,
+`Title-module__container` appears in both text-clamping and list-item contexts). Discriminators
+select the correct variant:
+
+- CSS property discriminator: `['prefix', 'property', 'value']` — matches the rule where
+  `rule.style.getPropertyValue(property) === value`
+- Selector discriminator: `['prefix', 'selectorContains', 'substring']` — matches the rule where
+  `rule.selectorText.includes(substring)`
+
+## Adding New CSS Classes
+
+1. Inspect the native GitHub DOM to find the class name prefix (everything before the hash suffix)
+2. Add the prefix to the `registerCssClasses()` call in the relevant content script
+3. If the prefix is ambiguous (multiple stylesheet matches), add a discriminator
+4. Use `cls('prefix')` in your code — never hardcode full class names with hashes
 
 # Development Workflow
 
@@ -116,11 +145,14 @@ To compare our custom view against GitHub's native views:
 
 # Common Pitfalls
 
-1. **Wrong display mode**: Metadata container needs `display: flex`, not `display: block`
-2. **Missing FormControl wrapper**: Search inputs need full FormControl structure, not just `<input>`
-3. **Incorrect nesting**: List container must be INSIDE search container, not a sibling
-4. **Missing wrapper divs**: GitHub uses plain wrapper `<div>`s for spacing - don't skip them
-5. **CSS class names**: These are CSS modules with generated hash suffixes - copy exactly
+1. Wrong display mode: Metadata container needs `display: flex`, not `display: block`
+2. Missing FormControl wrapper: Search inputs need full FormControl structure, not just `<input>`
+3. Incorrect nesting: List container must be INSIDE search container, not a sibling
+4. Missing wrapper divs: GitHub uses plain wrapper `<div>`s for spacing — don't skip them
+5. Hardcoded CSS class hashes: Never hardcode full class names with hash suffixes — use
+   `registerCssClasses()` with prefixes and `cls()` to resolve them at runtime
+6. Ambiguous CSS prefixes: When adding a new prefix that has multiple stylesheet matches, add a
+   discriminator — otherwise the first match wins, which may be the wrong variant
 
 # Code Style
 

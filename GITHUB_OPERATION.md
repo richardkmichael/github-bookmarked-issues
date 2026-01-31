@@ -321,8 +321,12 @@ Metadata-module__container--ydeM8
 
 These class names:
 - Are stable within a deployment
-- May change between deployments
-- Should be copied exactly when matching GitHub's styling
+- Change between deployments (both the separator format and hash values have changed in the past)
+- Must NOT be hardcoded — the extension discovers them at runtime from GitHub's stylesheets
+
+The extension's CSS class discovery system (`shared.js`) scans `document.styleSheets` to resolve
+registered prefixes (e.g., `Search-module__SearchContainer`) to their current full class names.
+See the "CSS Module Classes" section in `CLAUDE.md` for usage details.
 
 ## Authentication State
 
