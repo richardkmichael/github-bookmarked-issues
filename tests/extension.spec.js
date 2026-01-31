@@ -988,7 +988,7 @@ test.describe('', () => {
     // Helper to add bookmarks in auth context
     async function addAuthBookmarks(bookmarks) {
       const tempPage = await authContext.newPage();
-      await tempPage.goto(`chrome-extension://${authExtensionId}/assets/popup.html`);
+      await tempPage.goto(`chrome-extension://${authExtensionId}/assets/options.html`);
       await tempPage.evaluate((bookmarks) => {
         return new Promise((resolve) => {
           chrome.storage.sync.set({ bookmarked_issues: bookmarks }, resolve);
@@ -1000,7 +1000,7 @@ test.describe('', () => {
     // Helper to clear bookmarks in auth context
     async function clearAuthBookmarks() {
       const tempPage = await authContext.newPage();
-      await tempPage.goto(`chrome-extension://${authExtensionId}/assets/popup.html`);
+      await tempPage.goto(`chrome-extension://${authExtensionId}/assets/options.html`);
       await tempPage.evaluate(() => {
         return new Promise((resolve) => {
           chrome.storage.sync.clear(resolve);
@@ -1137,7 +1137,7 @@ test.describe('', () => {
     // Helper to add bookmarks in auth context
     async function addAuthBookmarks(bookmarks) {
       const tempPage = await authContext.newPage();
-      await tempPage.goto(`chrome-extension://${authExtensionId}/assets/popup.html`);
+      await tempPage.goto(`chrome-extension://${authExtensionId}/assets/options.html`);
       await tempPage.evaluate((bookmarks) => {
         return new Promise((resolve) => {
           chrome.storage.sync.set({ bookmarked_issues: bookmarks }, resolve);
@@ -1145,6 +1145,17 @@ test.describe('', () => {
       }, bookmarks);
       await tempPage.close();
     }
+
+    test.beforeEach(async () => {
+      const tempPage = await authContext.newPage();
+      await tempPage.goto(`chrome-extension://${authExtensionId}/assets/options.html`);
+      await tempPage.evaluate(() => {
+        return new Promise((resolve) => {
+          chrome.storage.local.remove('issue_cache', resolve);
+        });
+      });
+      await tempPage.close();
+    });
 
     test.beforeAll(async () => {
       const auth = getGitHubAuth();
