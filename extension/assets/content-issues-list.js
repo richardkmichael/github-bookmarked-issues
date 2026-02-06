@@ -253,13 +253,15 @@ function setupTemplates() {
   container.style.display = 'none';
 
   // Create all templates (using template.innerHTML for static content)
-  container.appendChild(createBookmarkIconTemplate());
+  const bookmarkIcon = createBookmarkIconTemplate();
+  if (bookmarkIcon) container.appendChild(bookmarkIcon);
   container.appendChild(createOpenIconTemplate());
   container.appendChild(createClosedIconTemplate());
   container.appendChild(createCommentIconTemplate());
   container.appendChild(createSortDescIconTemplate());
   container.appendChild(createSortAscIconTemplate());
   container.appendChild(createSkeletonItemTemplate());
+  container.appendChild(createIssueItemTemplate());
   container.appendChild(createBookmarksViewTemplate());
 
   document.body.appendChild(container);
@@ -270,8 +272,9 @@ function setupTemplates() {
   }
 }
 
-// Helper to create bookmark icon template
+// Helper to create bookmark icon template (returns null if already created by content.js)
 function createBookmarkIconTemplate() {
+  if (document.getElementById('icon-bookmark')) return null;
   const template = document.createElement('template');
   template.id = 'icon-bookmark';
   template.innerHTML = '<svg aria-hidden="true" focusable="false" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" style="display: inline-block; overflow: visible; vertical-align: text-bottom;" class="octicon octicon-bookmark"><path d="M3 2.75C3 1.784 3.784 1 4.75 1h6.5c.966 0 1.75.784 1.75 1.75v11.5a.75.75 0 0 1-1.227.579L8 11.722l-3.773 3.107A.751.751 0 0 1 3 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v9.91l3.023-2.489a.75.75 0 0 1 .954 0l3.023 2.49V2.75a.25.25 0 0 0-.25-.25Z"></path></svg>';
@@ -346,6 +349,71 @@ function createSkeletonItemTemplate() {
             </div>
           </div>
         </div>
+      </div>
+    </div>
+  `);
+  return template;
+}
+
+// Helper to create issue item template (structure matches GitHub's native issue rows)
+function createIssueItemTemplate() {
+  const template = document.createElement('template');
+  template.id = 'issue-item';
+  setTemplateHTML(template, `
+    <div class="${cls('ListItems-module__listItem')}">
+      <div class="${cls('IssueRow-module__row')}">
+        <li class="${cls('ListItem-module__listItem')}" role="listitem" tabindex="0">
+          <div class="${cls('Title-module__container')}" data-listview-item-title-container="true">
+            <h4 class="${clsAll('Title-module__heading', 'IssuePullRequestTitle-module__ListItemTitle_0')}">
+              <span class="${clsAll('Text__StyledText-sc', 'prc-Text-Text')}">
+                <a data-slot="title-link" class="${cls('IssuePullRequestTitle-module__ListItemTitle_1')}" data-testid="issue-pr-title-link" tabindex="-1" target="_blank" rel="noopener noreferrer"></a>
+              </span>
+            </h4>
+          </div>
+          <div class="${clsAll('LeadingContent-module__container', 'IssueItem-module__leadingContent')}">
+            <div class="${cls('LeadingVisual-module__outer')}" data-testid="list-row-state-icon" style="margin-top: 14px;">
+              <div>
+                <div class="${cls('LeadingVisual-module__inner')}" style="width: 16px; height: 16px;">
+                  <span data-slot="status-icon"></span>
+                  <span class="sr-only" data-slot="status-text"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="${cls('MainContent-module__container')}">
+            <div class="${cls('MainContent-module__inner')}">
+              <div class="${cls('Description-module__container')}">
+                <div class="${clsAll('DescriptionItem-module__default', 'IssuePullRequestDescription-module__descriptionItem')}" data-testid="list-row-repo-name-and-number">
+                  <div class="${cls('IssueItem-module__defaultRepoContainer')}">
+                    <span data-slot="repo-name"></span>
+                  </div>
+                  <span class="${cls('IssueItem-module__defaultNumberDescription')}">
+                    <span data-slot="issue-number"></span>\u00A0</span>
+                  <div class="${cls('IssueItem-module__timestampContainer')}" data-testid="created-at">
+                    <span>\u00B7 </span>
+                    <a data-slot="author-link" class="${clsAll('IssueItem-module__authorCreatedLink', 'prc-Link-Link')}" tabindex="-1" target="_blank" rel="noopener noreferrer"></a>
+                    <span> opened </span>
+                    <relative-time data-slot="created-time"></relative-time>
+                  </div>
+                  <div class="${cls('IssueItem-module__timestampContainer')}" data-testid="updated-at">
+                    \u00B7 Updated <relative-time data-slot="updated-time" class="${cls('IssuePullRequestDescription-module__RelativeTime')}"></relative-time>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="${clsAll('MetadataContainer-module__container', 'IssueItem-module__ListItem_0')}">
+            <div class="${clsAll('Metadata-module__metadata', 'Metadata-module__secondary', 'IssueItemMetadata-module__ListItemMetadata_0')}" data-testid="list-row-linked-pull-requests"></div>
+            <div class="${clsAll('Metadata-module__metadata', 'Metadata-module__secondary', 'IssueItemMetadata-module__ListItemMetadata_0')}" data-testid="list-row-comments">
+              <div class="${cls('IssueItem-module__commentCountContainer')}">
+                <span data-slot="comment-icon"></span>
+                <span class="ml-1" data-slot="comment-count"></span>
+                <span class="sr-only"> comments</span>
+              </div>
+            </div>
+            <div class="${clsAll('Metadata-module__metadata', 'Metadata-module__secondary', 'Metadata-module__alignRight', 'IssueItemMetadata-module__ListItemMetadata_0')}" data-testid="list-row-assignees"></div>
+          </div>
+        </li>
       </div>
     </div>
   `);
@@ -824,9 +892,8 @@ async function getBookmarks() {
   }
 }
 
-// Render a single issue item with GitHub styling matching application-main.html structure
+// Render a single issue item by cloning the issue-item template and populating data
 function renderIssueItem(issue) {
-  // Extract repo name
   let repoName = issue.repository?.full_name;
   if (!repoName && issue.html_url) {
     const match = issue.html_url.match(/github\.com\/([^/]+)\/([^/]+)\/issues/);
@@ -836,199 +903,48 @@ function renderIssueItem(issue) {
 
   const isOpen = issue.state === 'open';
 
-  // Create wrapper structure matching application-main.html
-  const wrapper = document.createElement('div');
-  wrapper.className = cls('ListItems-module__listItem');
+  const fragment = getTemplate('issue-item');
+  const wrapper = fragment.firstElementChild;
 
-  const row = document.createElement('div');
-  row.className = cls('IssueRow-module__row');
-
-  const li = document.createElement('li');
-  li.className = cls('ListItem-module__listItem');
-  li.setAttribute('role', 'listitem');
-  li.setAttribute('tabindex', '0');
+  // Set issue ID on the li element
+  const li = wrapper.querySelector('li');
   li.setAttribute('data-issue-id', `${repoName}#${issue.number}`);
 
-  // Title section
-  const titleContainer = document.createElement('div');
-  titleContainer.className = cls('Title-module__container');
-  titleContainer.setAttribute('data-listview-item-title-container', 'true');
-
-  const heading = document.createElement('h4');
-  heading.className = clsAll('Title-module__heading', 'IssuePullRequestTitle-module__ListItemTitle_0');
-
-  const titleSpan = document.createElement('span');
-  titleSpan.className = clsAll('Text__StyledText-sc', 'prc-Text-Text');
-
-  const titleLink = document.createElement('a');
+  // Title
+  const titleLink = wrapper.querySelector('[data-slot="title-link"]');
   titleLink.href = issue.html_url;
-  titleLink.className = cls('IssuePullRequestTitle-module__ListItemTitle_1');
-  titleLink.setAttribute('data-testid', 'issue-pr-title-link');
-  titleLink.setAttribute('tabindex', '-1');
-  titleLink.target = '_blank';
-  titleLink.rel = 'noopener noreferrer';
   titleLink.textContent = issue.title;
 
-  titleSpan.appendChild(titleLink);
-  heading.appendChild(titleSpan);
-  titleContainer.appendChild(heading);
-
-  // Leading content (status icon)
-  const leadingContent = document.createElement('div');
-  leadingContent.className = clsAll('LeadingContent-module__container', 'IssueItem-module__leadingContent');
-
-  const outer = document.createElement('div');
-  outer.className = cls('LeadingVisual-module__outer');
-  outer.setAttribute('data-testid', 'list-row-state-icon');
-  outer.style.marginTop = '14px';
-
-  const middle = document.createElement('div');
-
-  const inner = document.createElement('div');
-  inner.className = cls('LeadingVisual-module__inner');
-  inner.style.width = '16px';
-  inner.style.height = '16px';
-
+  // Status icon
+  const iconSlot = wrapper.querySelector('[data-slot="status-icon"]');
   const statusIcon = getIcon(isOpen ? 'open' : 'closed');
   statusIcon.setAttribute('color', isOpen ? 'var(--fgColor-open)' : 'var(--fgColor-done)');
+  iconSlot.replaceWith(statusIcon);
 
-  const srOnly = document.createElement('span');
-  srOnly.className = 'sr-only';
-  srOnly.textContent = `Status: ${isOpen ? 'Open' : 'Closed'}.`;
+  wrapper.querySelector('[data-slot="status-text"]').textContent =
+    `Status: ${isOpen ? 'Open' : 'Closed'}.`;
 
-  inner.appendChild(statusIcon);
-  inner.appendChild(srOnly);
-  middle.appendChild(inner);
-  outer.appendChild(middle);
-  leadingContent.appendChild(outer);
+  // Repo, number, author
+  wrapper.querySelector('[data-slot="repo-name"]').textContent = repoName;
+  wrapper.querySelector('[data-slot="issue-number"]').textContent = `#${issue.number}`;
 
-  // Main content section
-  const mainContent = document.createElement('div');
-  mainContent.className = cls('MainContent-module__container');
+  const authorLink = wrapper.querySelector('[data-slot="author-link"]');
+  authorLink.href = issue.user?.html_url || '#';
+  authorLink.textContent = issue.user?.login || 'unknown';
 
-  const mainInner = document.createElement('div');
-  mainInner.className = cls('MainContent-module__inner');
-
-  const description = document.createElement('div');
-  description.className = cls('Description-module__container');
-
-  const descItem = document.createElement('div');
-  descItem.className = clsAll('DescriptionItem-module__default', 'IssuePullRequestDescription-module__descriptionItem');
-  descItem.setAttribute('data-testid', 'list-row-repo-name-and-number');
-
-  // Repo and number
-  const repoContainer = document.createElement('div');
-  repoContainer.className = cls('IssueItem-module__defaultRepoContainer');
-  const repoSpan = document.createElement('span');
-  repoSpan.textContent = repoName;
-  repoContainer.appendChild(repoSpan);
-
-  const numberDesc = document.createElement('span');
-  numberDesc.className = cls('IssueItem-module__defaultNumberDescription');
-  const numberSpan = document.createElement('span');
-  numberSpan.textContent = `#${issue.number}`;
-  numberDesc.appendChild(numberSpan);
-  numberDesc.appendChild(document.createTextNode('\u00A0')); // &nbsp;
-
-  // Created timestamp
-  const createdContainer = document.createElement('div');
-  createdContainer.className = cls('IssueItem-module__timestampContainer');
-  createdContainer.setAttribute('data-testid', 'created-at');
-
-  const dot1 = document.createElement('span');
-  dot1.textContent = '· ';
-
-  const userLink = document.createElement('a');
-  userLink.className = clsAll('IssueItem-module__authorCreatedLink', 'prc-Link-Link');
-  userLink.href = issue.user?.html_url || '#';
-  userLink.tabIndex = -1;
-  userLink.target = '_blank';
-  userLink.rel = 'noopener noreferrer';
-  userLink.textContent = issue.user?.login || 'unknown';
-
-  const opened = document.createElement('span');
-  opened.textContent = ' opened ';
-
-  const createdTime = document.createElement('relative-time');
+  // Timestamps
+  const createdTime = wrapper.querySelector('[data-slot="created-time"]');
   createdTime.setAttribute('datetime', issue.created_at);
   createdTime.textContent = formatDate(issue.created_at);
 
-  createdContainer.appendChild(dot1);
-  createdContainer.appendChild(userLink);
-  createdContainer.appendChild(opened);
-  createdContainer.appendChild(createdTime);
-
-  // Updated timestamp
-  const updatedContainer = document.createElement('div');
-  updatedContainer.className = cls('IssueItem-module__timestampContainer');
-  updatedContainer.setAttribute('data-testid', 'updated-at');
-
-  updatedContainer.appendChild(document.createTextNode('· Updated '));
-
-  const updatedTime = document.createElement('relative-time');
-  updatedTime.className = cls('IssuePullRequestDescription-module__RelativeTime');
+  const updatedTime = wrapper.querySelector('[data-slot="updated-time"]');
   updatedTime.setAttribute('datetime', issue.updated_at);
   updatedTime.textContent = formatDate(issue.updated_at);
 
-  updatedContainer.appendChild(updatedTime);
-
-  descItem.appendChild(repoContainer);
-  descItem.appendChild(numberDesc);
-  descItem.appendChild(createdContainer);
-  descItem.appendChild(updatedContainer);
-  description.appendChild(descItem);
-  mainInner.appendChild(description);
-  mainContent.appendChild(mainInner);
-
-  // Metadata section — 3 fixed-width slots matching native layout:
-  // 1. Linked pull requests (empty placeholder)
-  // 2. Comment count
-  // 3. Assignees (empty placeholder, alignRight)
-  const metadataContainer = document.createElement('div');
-  metadataContainer.className = clsAll('MetadataContainer-module__container', 'IssueItem-module__ListItem_0');
-
-  // Slot 1: linked pull requests (always empty in bookmarked view)
-  const prMetadata = document.createElement('div');
-  prMetadata.className = clsAll('Metadata-module__metadata', 'Metadata-module__secondary', 'IssueItemMetadata-module__ListItemMetadata_0');
-  prMetadata.setAttribute('data-testid', 'list-row-linked-pull-requests');
-  metadataContainer.appendChild(prMetadata);
-
-  // Slot 2: comment count
-  const commentMetadata = document.createElement('div');
-  commentMetadata.className = clsAll('Metadata-module__metadata', 'Metadata-module__secondary', 'IssueItemMetadata-module__ListItemMetadata_0');
-  commentMetadata.setAttribute('data-testid', 'list-row-comments');
-
-  const commentCountContainer = document.createElement('div');
-  commentCountContainer.className = cls('IssueItem-module__commentCountContainer');
-
-  commentCountContainer.appendChild(getIcon('comment'));
-
-  const countSpan = document.createElement('span');
-  countSpan.className = 'ml-1';
-  countSpan.textContent = issue.comments;
-
-  const srOnlySpan = document.createElement('span');
-  srOnlySpan.className = 'sr-only';
-  srOnlySpan.textContent = ' comments';
-
-  commentCountContainer.appendChild(countSpan);
-  commentCountContainer.appendChild(srOnlySpan);
-  commentMetadata.appendChild(commentCountContainer);
-  metadataContainer.appendChild(commentMetadata);
-
-  // Slot 3: assignees (always empty in bookmarked view)
-  const assigneeMetadata = document.createElement('div');
-  assigneeMetadata.className = clsAll('Metadata-module__metadata', 'Metadata-module__secondary', 'Metadata-module__alignRight', 'IssueItemMetadata-module__ListItemMetadata_0');
-  assigneeMetadata.setAttribute('data-testid', 'list-row-assignees');
-  metadataContainer.appendChild(assigneeMetadata);
-
-  // Assemble all parts
-  li.appendChild(titleContainer);
-  li.appendChild(leadingContent);
-  li.appendChild(mainContent);
-  li.appendChild(metadataContainer);
-  row.appendChild(li);
-  wrapper.appendChild(row);
+  // Comment count
+  const commentIconSlot = wrapper.querySelector('[data-slot="comment-icon"]');
+  commentIconSlot.replaceWith(getIcon('comment'));
+  wrapper.querySelector('[data-slot="comment-count"]').textContent = issue.comments;
 
   return wrapper;
 }
@@ -1039,63 +955,53 @@ function getRepoFromUrl(url) {
   return match ? `${match[1]}/${match[2]}` : 'unknown/repository';
 }
 
-// Sort issues based on selected order
+// Sort issues based on selected order (e.g. "updated-desc", "repo-asc")
 function sortIssues(issues, bookmarks, sortOrder) {
   const sorted = [...issues];
 
-  switch (sortOrder) {
-    case 'updated-desc':
-      sorted.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+  // Parse "criteria-direction" format
+  const parts = sortOrder.split('-');
+  const direction = parts.pop(); // "asc" or "desc"
+  const criteria = parts.join('-') || 'updated';
+  const ascending = direction === 'asc';
+
+  // Key extraction functions for each criteria
+  function getUpdatedTime(issue) {
+    return new Date(issue.updated_at).getTime();
+  }
+
+  function getBookmarkedTime(issue) {
+    const id = getBookmarkIdFromUrl(issue.html_url);
+    return (id && bookmarks[id]?.bookmarkedAt) || 0;
+  }
+
+  function getRepo(issue) {
+    return getRepoFromUrl(issue.html_url).toLowerCase();
+  }
+
+  switch (criteria) {
+    case 'updated':
+      sorted.sort((a, b) => ascending
+        ? getUpdatedTime(a) - getUpdatedTime(b)
+        : getUpdatedTime(b) - getUpdatedTime(a));
       break;
 
-    case 'updated-asc':
-      sorted.sort((a, b) => new Date(a.updated_at) - new Date(b.updated_at));
+    case 'bookmarked':
+      sorted.sort((a, b) => ascending
+        ? getBookmarkedTime(a) - getBookmarkedTime(b)
+        : getBookmarkedTime(b) - getBookmarkedTime(a));
       break;
 
-    case 'bookmarked-desc':
+    case 'repo':
       sorted.sort((a, b) => {
-        const bookmarkIdA = getBookmarkIdFromUrl(a.html_url);
-        const bookmarkIdB = getBookmarkIdFromUrl(b.html_url);
-        const bookmarkA = bookmarkIdA ? bookmarks[bookmarkIdA] : null;
-        const bookmarkB = bookmarkIdB ? bookmarks[bookmarkIdB] : null;
-        const timeA = bookmarkA?.bookmarkedAt || 0;
-        const timeB = bookmarkB?.bookmarkedAt || 0;
-        return timeB - timeA;
-      });
-      break;
-
-    case 'bookmarked-asc':
-      sorted.sort((a, b) => {
-        const bookmarkIdA = getBookmarkIdFromUrl(a.html_url);
-        const bookmarkIdB = getBookmarkIdFromUrl(b.html_url);
-        const bookmarkA = bookmarkIdA ? bookmarks[bookmarkIdA] : null;
-        const bookmarkB = bookmarkIdB ? bookmarks[bookmarkIdB] : null;
-        const timeA = bookmarkA?.bookmarkedAt || 0;
-        const timeB = bookmarkB?.bookmarkedAt || 0;
-        return timeA - timeB;
-      });
-      break;
-
-    case 'repo-asc':
-      sorted.sort((a, b) => {
-        const repoA = getRepoFromUrl(a.html_url).toLowerCase();
-        const repoB = getRepoFromUrl(b.html_url).toLowerCase();
-        const repoCompare = repoA.localeCompare(repoB);
-        return repoCompare !== 0 ? repoCompare : a.number - b.number;
-      });
-      break;
-
-    case 'repo-desc':
-      sorted.sort((a, b) => {
-        const repoA = getRepoFromUrl(a.html_url).toLowerCase();
-        const repoB = getRepoFromUrl(b.html_url).toLowerCase();
-        const repoCompare = repoB.localeCompare(repoA);
-        return repoCompare !== 0 ? repoCompare : b.number - a.number;
+        const cmp = getRepo(a).localeCompare(getRepo(b));
+        const dir = ascending ? 1 : -1;
+        return cmp !== 0 ? cmp * dir : (a.number - b.number) * dir;
       });
       break;
 
     default:
-      sorted.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+      sorted.sort((a, b) => getUpdatedTime(b) - getUpdatedTime(a));
   }
 
   return sorted;
@@ -1208,6 +1114,9 @@ async function loadAndRenderBookmarks() {
       error.textContent = `Warning: ${failedCount} of ${bookmarkArray.length} issues could not be loaded.`;
     }
 
+    // Cache fetched data so sort changes can re-render without re-fetching
+    cachedIssueData = { issues: validIssues, bookmarks };
+
     // Sort issues based on preference
     const sortedIssues = sortIssues(validIssues, bookmarks, sortOrder);
 
@@ -1234,6 +1143,39 @@ async function loadAndRenderBookmarks() {
     if (resultsSection) resultsSection.style.display = 'none';
     error.style.display = 'block';
     error.textContent = `Failed to load bookmarked issues: ${e.message}`;
+  }
+}
+
+// Re-sort and re-render from cached data (no network requests)
+function resortAndRerender(sortOrder) {
+  if (!cachedIssueData) return;
+
+  const { issues, bookmarks } = cachedIssueData;
+  const container = document.querySelector('[data-extension-bookmarks-container]');
+  if (!container) return;
+
+  const list = container.querySelector('#bookmarks-list');
+  const resultsSection = container.querySelector('#bookmarks-results-section');
+  const countHeading = container.querySelector('#bookmarks-count');
+  if (!list) return;
+
+  const sortedIssues = sortIssues(issues, bookmarks, sortOrder);
+
+  if (resultsSection && countHeading) {
+    const count = sortedIssues.length;
+    countHeading.textContent = `${count} result${count !== 1 ? 's' : ''}`;
+    resultsSection.style.display = 'flex';
+  }
+
+  list.replaceChildren();
+  sortedIssues.forEach(issue => {
+    list.appendChild(renderIssueItem(issue));
+  });
+
+  // Re-apply active filter text
+  const filterInput = container.querySelector('#bookmarks-filter');
+  if (filterInput && filterInput.value) {
+    filterInput.dispatchEvent(new Event('input'));
   }
 }
 
@@ -1280,6 +1222,12 @@ function setupFilterInput() {
   });
 }
 
+// Cached issue data from last fetch, used by sort to avoid re-fetching
+let cachedIssueData = null;
+
+// AbortController for sort dropdown's document click listener (cleaned up on re-init)
+let sortDropdownAbort = null;
+
 // Debounce timeout for cross-tab bookmark sync
 let refreshDebounceTimeout = null;
 const REFRESH_DEBOUNCE_MS = 25;
@@ -1298,6 +1246,7 @@ function setupStorageListener() {
     clearTimeout(refreshDebounceTimeout);
     refreshDebounceTimeout = setTimeout(() => {
       console.log('[Bookmarked] Storage changed, reloading bookmarks');
+      cachedIssueData = null;
       loadAndRenderBookmarks();
     }, REFRESH_DEBOUNCE_MS);
   });
@@ -1455,7 +1404,11 @@ async function setupSortDropdown() {
     const sortOrder = `${currentCriteria}-${currentOrder}`;
     await browser.storage.sync.set({ bookmarks_sort_order: sortOrder });
     closeMenu();
-    await loadAndRenderBookmarks();
+    if (cachedIssueData) {
+      resortAndRerender(sortOrder);
+    } else {
+      await loadAndRenderBookmarks();
+    }
   }
 
   // Update UI to reflect saved sort
@@ -1504,13 +1457,15 @@ async function setupSortDropdown() {
     });
   });
 
-  // Close menu on outside click
-  const closeOnOutsideClick = (e) => {
+  // Close menu on outside click (abort previous listener if re-initialized)
+  if (sortDropdownAbort) sortDropdownAbort.abort();
+  sortDropdownAbort = new AbortController();
+
+  document.addEventListener('click', (e) => {
     if (!sortButton.contains(e.target) && !sortMenu.contains(e.target)) {
       closeMenu();
     }
-  };
-  document.addEventListener('click', closeOnOutsideClick);
+  }, { signal: sortDropdownAbort.signal });
 
 }
 

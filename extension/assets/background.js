@@ -293,7 +293,7 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
         // Cache the successful response
         await setCachedIssue(cacheKey, data);
 
-        return { data, rateLimit, fromCache: false };
+        return { data, rateLimit, fromCache: false, fetchedAt: Date.now() };
       })
       .then(({ data, rateLimit, fromCache, fetchedAt }) => {
         console.log('[Background] Successfully fetched issue:', `${owner}/${repo}#${number}`, fromCache ? '(cached)' : '');

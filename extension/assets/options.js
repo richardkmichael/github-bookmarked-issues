@@ -176,10 +176,14 @@ async function testToken() {
 }
 
 // Remove token from input and storage
-function removeToken() {
+async function removeToken() {
   patInput.value = '';
-  browser.storage.sync.remove(PAT_KEY);
-  updateStatus(false);
+  try {
+    await browser.storage.sync.remove(PAT_KEY);
+    updateStatus(false);
+  } catch (e) {
+    showMessage(`Error removing token: ${e.message}`, 'error');
+  }
 }
 
 // Toggle password visibility
