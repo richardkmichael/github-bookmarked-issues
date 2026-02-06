@@ -34,7 +34,7 @@ export function getGitHubAuth(encoded = process.env.GITHUB_AUTH_STATE) {
  */
 export function getSessionSkipReason(encoded = process.env.GITHUB_AUTH_STATE) {
   if (!encoded) {
-    return 'GITHUB_AUTH_STATE not set. Run: node scripts/obtain-github-authorization.js';
+    return 'GITHUB_AUTH_STATE not set. Run: node scripts/obtain-github-authorization.js --update';
   }
   try {
     const decoded = JSON.parse(Buffer.from(encoded, 'base64').toString('utf-8'));
@@ -44,7 +44,7 @@ export function getSessionSkipReason(encoded = process.env.GITHUB_AUTH_STATE) {
     }
     const expiredCount = githubCookies.filter(c => c.expires > 0 && c.expires * 1000 < Date.now()).length;
     if (expiredCount > 0) {
-      return `GITHUB_AUTH_STATE has ${expiredCount} expired cookie(s). Run: node scripts/obtain-github-authorization.js`;
+      return `GITHUB_AUTH_STATE has ${expiredCount} expired cookie(s). Run: node scripts/obtain-github-authorization.js --update`;
     }
     return null; // Auth is valid
   } catch (e) {
@@ -113,7 +113,7 @@ if (isMain) {
     const expiredCount = githubCookies.filter(c => c.expires > 0 && c.expires * 1000 < Date.now()).length;
     if (expiredCount > 0) {
       console.log();
-      console.error(`${expiredCount} cookie(s) expired - regenerate with: node scripts/obtain-github-authorization.js`);
+      console.error(`${expiredCount} cookie(s) expired - regenerate with: node scripts/obtain-github-authorization.js --update`);
       process.exit(1);
     }
 

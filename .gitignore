@@ -13,3 +13,4 @@ playwright-report/
 
 # Environment variables (may contain GitHub session credentials)
 .env
+.env.expired_auth.bak
