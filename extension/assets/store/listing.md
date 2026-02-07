@@ -30,6 +30,32 @@ No data is sent to any server other than GitHub's API. No analytics or tracking.
 
 Source code: https://github.com/richardkmichael/github-bookmarked-issues
 
+## Chrome Web Store
+
+Privacy practices justifications:
+
+### Storage
+
+Stores the user's bookmarked issues, sort preference, and an optional GitHub personal access token
+in sync storage (for cross-device sync). Caches fetched issue data in local storage to reduce API
+calls and provide fallback when rate-limited.
+
+### webRequest
+
+Listens for HTTP response headers on github.com navigation to discover GraphQL query hashes from
+Link preload hints. These hashes are required to fetch issue data from GitHub's internal API. No
+request data is modified or redirected.
+
+### Host permissions
+
+Content scripts on github.com add a bookmark button to issue pages and inject a Bookmarked view into
+github.com/issues. Requests to api.github.com fetch issue details (title, state, author) for display
+in the toolbar popup.
+
+### Remote code
+
+This extension does not use remote code. All JavaScript is bundled in the extension package.
+
 ## Categories
 
 Chrome Web Store: Productivity
