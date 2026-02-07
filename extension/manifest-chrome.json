@@ -1,70 +1,9 @@
 {
   "$schema": "https://json.schemastore.org/chrome-manifest",
-  "name": "GitHub Bookmarked Issues",
-  "version": "1.0.0",
-  "description": "Track your bookmarked GitHub issues across all repositories with cross-device sync",
-  "manifest_version": 3,
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA5hoPyLiaL270ncRXJdvWf8QjbNEV4TfsjYTO7Y11PAYJeshGzlYWTNtkcn7JUAZJQFKFjicmF9O8IUpyCaPo9nxdAmhk8EsZnoh47ueo0wyUAhFEGRNlYOPEIMmSeRVDbABIlMOReDJLAfVYMYOOX2Q14E8w0/TrypEthPKYSMunVEo60rTXCF+bFx+MWeBBimB1bSYSnCRNch2iU1Iug/yrlqhbqwWrSTDqQWllf4jhJdLDmX/eVCcoFiz+ejTfcEKElXmMWJJnLNDU6jPntLJJZ8gtbJMGhO3CUAkLPLX4DcHzgtq4VX/V9lz9CcmlskdW9SfFTSir917PGfHIVwIDAQAB",
   "minimum_chrome_version": "123",
-  "browser_specific_settings": {
-    "gecko": {
-      "id": "github-bookmarked-issues@extensions",
-      "strict_min_version": "128.0"
-    }
-  },
-  "permissions": [
-    "storage",
-    "webRequest"
-  ],
-  "host_permissions": [
-    "https://github.com/*",
-    "https://api.github.com/*"
-  ],
-  "action": {
-    "default_popup": "assets/popup.html",
-    "default_icon": {
-      "16": "assets/icon-16.png",
-      "32": "assets/icon-32.png",
-      "48": "assets/icon-48.png",
-      "128": "assets/icon-128.png"
-    }
-  },
-  "options_ui": {
-    "page": "assets/options.html",
-    "open_in_tab": false
-  },
-  "icons": {
-    "16": "assets/icon-16.png",
-    "32": "assets/icon-32.png",
-    "48": "assets/icon-48.png",
-    "128": "assets/icon-128.png"
-  },
   "background": {
     "service_worker": "assets/background.js",
     "type": "module"
-  },
-  "content_scripts": [
-    {
-      "run_at": "document_end",
-      "matches": [
-        "https://github.com/*/*"
-      ],
-      "js": [
-        "assets/shared.js",
-        "assets/content.js"
-      ]
-    },
-    {
-      "run_at": "document_end",
-      "matches": [
-        "https://github.com/issues",
-        "https://github.com/issues/*",
-        "https://github.com/*/*"
-      ],
-      "js": [
-        "assets/shared.js",
-        "assets/content-issues-list.js"
-      ]
-    }
-  ]
+  }
 }

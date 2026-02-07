@@ -1,9 +1,9 @@
 ## Features
 
-- **Bookmark button** on GitHub issue pages
-- **Popup** - View bookmarks, copy as markdown, import from URLs
-- **Bookmarks View** - Custom view at `github.com/issues/bookmarked` (requires login)
-- **Options** - Configure GitHub PAT for higher API rate limits
+- Bookmark button on GitHub issue pages
+- Bookmarked view - Custom view at `github.com/issues/bookmarked`
+- Toolbar popup - View bookmarks, import/export as Markdown lists
+- Options - Configure GitHub PAT for higher API rate limits
 
 ## Install
 
@@ -11,21 +11,21 @@ Manual install, until Chrome Web Store and Firefox Add-On signing.
 
 Download the extension ZIP or XPI from [release assets](https://github.com/richardkmichael/github-bookmarked-issues/releases).
 
-**Chrome**: `chrome://extensions`, enable `Developer mode`, drag and drop the `ZIP`.
-**Firefox**: `about:debugging#/runtime/this-firefox`, `Load temporary Add-on`, select the `XPI`.
+Chrome: `chrome://extensions`, enable `Developer mode`, `Load unpacked`, select the `build/chrome` directory
+Firefox: `about:debugging#/runtime/this-firefox`, `Load temporary Add-on`, select the `XPI`.
 
 ## How it works
 
-The Bookmarks view (at `github.com/issues/bookmarked`) uses GitHub's internal GraphQL API via
+The Bookmarked view (at `github.com/issues/bookmarked`) uses GitHub's internal GraphQL API via
 the content script — no rate limits for logged-in users.
 
 The popup toolbar uses REST API, which is rate-limited. Configure a GitHub PAT in the
 extension options for higher limits (5,000/hr vs 60/hr unauthenticated).
 
-The Bookmarks view discovers GraphQL query hashes automatically by intercepting HTTP headers
+The Bookmarked view discovers GraphQL query hashes automatically by intercepting HTTP headers
 when you navigate to any `github.com` page. This discovery only happens on `github.com` tabs.
-If the Bookmarks view shows a rate-limit warning despite being logged in, navigate to any
-GitHub page to trigger discovery, then reload the Bookmarks view.
+If the Bookmarked view shows a rate-limit warning despite being logged in, navigate to any
+GitHub page to trigger discovery, then reload the Bookmarked view.
 
 See [GITHUB_OPERATION.md](GITHUB_OPERATION.md) for technical details.
 
@@ -41,6 +41,25 @@ npm run build        # Build both browsers
 npm run dev:watch    # Auto-rebuild on changes
 npm test             # Run Playwright tests
 ```
+
+## Release and version
+
+Releases are driven by annotated git tags (e.g., `v1.0.0`, `v1.0.0-rc3`).
+
+The manifest `version` field is numeric-only (`X.Y.Z`) as required by both Chrome Web Store and
+Firefox AMO. It is bumped manually for actual releases, not for pre-release (`-rcX`) tags.
+
+Chrome supports a separate `version_name` field for human-readable version strings. The build
+system auto-generates this from git state:
+
+| Build context            | version_name                        |
+|--------------------------|-------------------------------------|
+| Tagged commit            | `1.0.0-rc1` (from tag `v1.0.0-rc1`) |
+| Development (clean)      | `1.0.0-development_abc1234`         |
+| Development (dirty)      | `1.0.0-development_abc1234-dirty`   |
+
+Firefox has no equivalent to `version_name`; the build writes a `.version_name` file for use in
+package filenames instead.
 
 ## Data Storage
 
@@ -67,13 +86,13 @@ npm test             # Run Playwright tests
 |-----------------|--------|-----------------------------|
 | Chrome          | 123+   | Tested                      |
 | Edge            | 123+   | Chromium-based, should work |
-| Firefox Desktop | 128+   | Tested                      |
+| Firefox         | 142+   | Tested                      |
 | Firefox Android | -      | No `storage.sync` support   |
 | Safari          | -      | Not investigated            |
 
 ## Known Limitations
 
-- **Bookmarks view navigation**: Must navigate from a built-in view (e.g., `/issues/created`), then click "Bookmarked". Direct URL navigation to `/issues/bookmarked` returns 404 (GitHub's React router doesn't know the route).
-- **GraphQL discovery requires a github.com tab**: The extension discovers GraphQL query hashes by intercepting HTTP headers from `github.com` page loads. Without discovery (e.g. if you haven't visited GitHub since installing), the Bookmarks view falls back to REST API with rate limits. Workaround: navigate to any `github.com` page, or configure a PAT in Settings.
-- **Popup always uses REST API**: Due to browser security restrictions (`Sec-Fetch-Site` header), the popup cannot use GitHub's internal GraphQL API. Without a PAT, it is limited to 60 requests/hour (unauthenticated). With many bookmarks, this can cause issues to fail to load. Configure a PAT in Settings for 5,000 requests/hour.
-- **Not cross-browser**: Local and browser-specific storage only, e.g. Google Account, Firefox Account
+- Bookmarked view navigation: Must navigate from a built-in view (e.g., `/issues/created`), then click "Bookmarked". Direct URL navigation to `/issues/bookmarked` returns 404 (GitHub's React router doesn't know the route).
+- GraphQL discovery requires a github.com tab: The extension discovers GraphQL query hashes by intercepting HTTP headers from `github.com` page loads. Without discovery (e.g. if you haven't visited GitHub since installing), the Bookmarked view falls back to REST API with rate limits. Workaround: navigate to any `github.com` page, or configure a PAT in Settings.
+- Popup always uses REST API: Due to browser security restrictions (`Sec-Fetch-Site` header), the popup cannot use GitHub's internal GraphQL API. Without a PAT, it is limited to 60 requests/hour (unauthenticated). With many bookmarks, this can cause issues to fail to load. Configure a PAT in Settings for 5,000 requests/hour.
+- Not cross-browser: Local and browser-specific storage only, e.g. Google Account, Firefox Account

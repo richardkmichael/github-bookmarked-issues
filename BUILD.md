@@ -34,45 +34,24 @@ npm run build
 
 ## Build System Architecture
 
-### Why Two Manifest Files?
+### Manifest: Base + Browser Overrides
 
-This extension maintains **separate manifest files** due to incompatible Manifest V3 implementations:
+Chrome and Firefox have incompatible Manifest V3 fields, so the extension uses a base manifest
+with browser-specific overrides:
 
-**Chrome** (`extension/manifest-chrome.json`):
-```json
-"background": {
-  "service_worker": "assets/background.js",
-  "type": "module"
-}
-```
+- `extension/manifest-base.json` — shared fields (permissions, icons, content scripts, etc.)
+- `extension/manifest-chrome.json` — `$schema`, `key`, `minimum_chrome_version`, `background.service_worker`
+- `extension/manifest-firefox.json` — `browser_specific_settings.gecko`, `background.scripts`
 
-**Firefox** (`extension/manifest-firefox.json`):
-```json
-"background": {
-  "scripts": ["assets/background.js"],
-  "type": "module"
-},
-"browser_specific_settings": {
-  "gecko": {
-    "id": "github-bookmarked-issues@extensions",
-    "strict_min_version": "142.0",
-    "data_collection_permissions": {"required": ["none"]}
-  }
-}
-```
-
-**Key Differences**:
-- Chrome uses `service_worker` (string), Firefox uses `scripts` (array)
-- Firefox requires `browser_specific_settings.gecko.id` for extension persistence
-- Firefox-specific `data_collection_permissions` declaration
-- Chrome manifest includes `$schema` for IDE validation (Firefox rejects this field)
+At build time, `copy.js` deep-merges the base with the browser override to produce
+`build/{browser}/manifest.json`.
 
 ### Build Pipeline (3 Stages)
 
 #### 1. `scripts/copy.js` - File Preparation
 - Copies `extension/` → `build/{browser}/`
-- Skips `manifest-*.json` and `vendor/` (handled separately)
-- Copies browser-specific manifest (`manifest-{browser}.json`), renames to `manifest.json`
+- Skips manifest files and `vendor/` (handled separately)
+- Merges `manifest-base.json` with `manifest-{browser}.json` overrides, writes `manifest.json`
 
 #### 2. `scripts/build.js` - Dependency Bundling
 - Bundles `@github/relative-time-element` into `assets/vendor/`

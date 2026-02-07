@@ -1,9 +1,4 @@
 {
-  "name": "GitHub Bookmarked Issues",
-  "version": "1.0.0",
-  "description": "Track your bookmarked GitHub issues across all repositories with cross-device sync",
-  "manifest_version": 3,
-  "minimum_chrome_version": "123",
   "browser_specific_settings": {
     "gecko": {
       "id": "github-bookmarked-issues@extensions",
@@ -13,60 +8,8 @@
       }
     }
   },
-  "permissions": [
-    "storage",
-    "webRequest"
-  ],
-  "host_permissions": [
-    "https://github.com/*",
-    "https://api.github.com/*"
-  ],
-  "action": {
-    "default_popup": "assets/popup.html",
-    "default_icon": {
-      "16": "assets/icon-16.png",
-      "32": "assets/icon-32.png",
-      "48": "assets/icon-48.png",
-      "128": "assets/icon-128.png"
-    }
-  },
-  "options_ui": {
-    "page": "assets/options.html",
-    "open_in_tab": false,
-    "browser_style": false
-  },
-  "icons": {
-    "16": "assets/icon-16.png",
-    "32": "assets/icon-32.png",
-    "48": "assets/icon-48.png",
-    "128": "assets/icon-128.png"
-  },
   "background": {
     "scripts": ["assets/background.js"],
     "type": "module"
-  },
-  "content_scripts": [
-    {
-      "run_at": "document_end",
-      "matches": [
-        "https://github.com/*/*"
-      ],
-      "js": [
-        "assets/shared.js",
-        "assets/content.js"
-      ]
-    },
-    {
-      "run_at": "document_end",
-      "matches": [
-        "https://github.com/issues",
-        "https://github.com/issues/*",
-        "https://github.com/*/*"
-      ],
-      "js": [
-        "assets/shared.js",
-        "assets/content-issues-list.js"
-      ]
-    }
-  ]
+  }
 }

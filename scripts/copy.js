@@ -9,6 +9,23 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, '..');
 const SOURCE = path.join(ROOT, 'extension');
 
+function deepMerge(base, override) {
+  const result = { ...base };
+  for (const key of Object.keys(override)) {
+    if (
+      typeof override[key] === 'object' && override[key] !== null &&
+      !Array.isArray(override[key]) &&
+      typeof base[key] === 'object' && base[key] !== null &&
+      !Array.isArray(base[key])
+    ) {
+      result[key] = deepMerge(base[key], override[key]);
+    } else {
+      result[key] = override[key];
+    }
+  }
+  return result;
+}
+
 const browser = process.argv[2];
 if (!browser || !['chrome', 'firefox'].includes(browser)) {
   console.error('Usage: node copy.js [chrome|firefox]');
@@ -63,7 +80,7 @@ async function copyDirectory(src, dest, options = {}) {
     const srcPath = path.join(src, entry.name);
     const destPath = path.join(dest, entry.name);
 
-    // Skip manifest files - handled separately
+    // Skip manifest files - handled separately (base + browser override merged)
     if (entry.name.startsWith('manifest-') && entry.name.endsWith('.json')) {
       continue;
     }
@@ -92,10 +109,11 @@ async function build() {
   // Copy extension files (skip vendor as it's built separately)
   await copyDirectory(SOURCE, TARGET, { skipVendor: true });
 
-  // Read, modify, and write manifest with version_name
-  const manifestSrc = path.join(SOURCE, `manifest-${browser}.json`);
+  // Merge base manifest with browser-specific overrides
+  const base = JSON.parse(await fs.readFile(path.join(SOURCE, 'manifest-base.json'), 'utf8'));
+  const overrides = JSON.parse(await fs.readFile(path.join(SOURCE, `manifest-${browser}.json`), 'utf8'));
+  const manifest = deepMerge(base, overrides);
   const manifestDest = path.join(TARGET, 'manifest.json');
-  const manifest = JSON.parse(await fs.readFile(manifestSrc, 'utf8'));
 
   const versionName = getVersionName(manifest.version);
   if (versionName !== manifest.version) {
@@ -106,7 +124,13 @@ async function build() {
     console.log(`  Version: ${versionName}`);
   }
 
-  await fs.writeFile(manifestDest, JSON.stringify(manifest, null, 2) + '\n');
+  const sortedKeys = (key, value) => {
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      return Object.fromEntries(Object.entries(value).sort(([a], [b]) => a.localeCompare(b)));
+    }
+    return value;
+  };
+  await fs.writeFile(manifestDest, JSON.stringify(manifest, sortedKeys, 2) + '\n');
 
   // Write version name for package.js (Firefox manifest can't store it)
   await fs.writeFile(path.join(TARGET, '.version_name'), versionName);
