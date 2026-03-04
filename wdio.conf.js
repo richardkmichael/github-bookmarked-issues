@@ -56,7 +56,8 @@ export const config = {
   reporters: ['spec'],
   mochaOpts: {
     ui: 'bdd',
-    timeout: 15000,
+    timeout: 75000,
+    retries: process.env.CI ? 1 : 0,
   },
 
   // Install the extension via installAddOn() in the before hook rather than

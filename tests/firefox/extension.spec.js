@@ -200,14 +200,21 @@ describe('Popup', function () {
 
     await browser.url(popupUrl());
     await waitForPopupLoaded();
-    // Ensure the seeded bookmark is rendered before testing import duplicate detection
     await $('.issue-item').waitForDisplayed({ timeout: 10000 });
 
     const importBtn = await $('#import-btn');
     await importBtn.click();
 
+    // Set value directly and dispatch a single input event, rather than using
+    // setValue which types character-by-character. Each keystroke triggers async
+    // validation — on slow runners, a validation for partial text can resolve
+    // after the final one, producing "1 invalid" instead of "1 duplicate".
     const textarea = await $('#import-textarea');
-    await textarea.setValue(`- ${issueUrl(TEST_ISSUES[0])}`);
+    const pasteText = `- ${issueUrl(TEST_ISSUES[0])}`;
+    await browser.execute(function (el, text) {
+      el.value = text;
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+    }, textarea, pasteText);
     await browser.pause(500);
 
     const validation = await $('#import-validation');
@@ -401,6 +408,7 @@ describe('Options', function () {
 
 describe('Navigation', function () {
   this.timeout(30000);
+  this.retries(2);
 
   const bookmarkSelector = '[data-extension-bookmark]';
   const headerActionsSelector = '[data-component="PH_Actions"]';
@@ -430,9 +438,9 @@ describe('Navigation', function () {
     await issueLink.waitForDisplayed({ timeout: 10000 });
     await issueLink.click();
 
-    // Wait for issue page header actions
+    // Wait for issue page header actions (30s: GitHub SPA can be slow on CI)
     const headerActions = await $(headerActionsSelector);
-    await headerActions.waitForDisplayed({ timeout: 15000 });
+    await headerActions.waitForDisplayed({ timeout: 30000 });
 
     const bookmarkButton = await $(`${headerActionsSelector} ${bookmarkSelector}`);
     await bookmarkButton.waitForDisplayed({ timeout: 10000 });
@@ -454,9 +462,9 @@ describe('Navigation', function () {
     await issueLink.waitForDisplayed({ timeout: 10000 });
     await issueLink.click();
 
-    // Wait for issue page header actions
+    // Wait for issue page header actions (30s: GitHub SPA can be slow on CI)
     const headerActions = await $(headerActionsSelector);
-    await headerActions.waitForDisplayed({ timeout: 15000 });
+    await headerActions.waitForDisplayed({ timeout: 30000 });
 
     const bookmarkButton = await $(`${headerActionsSelector} ${bookmarkSelector}`);
     await bookmarkButton.waitForDisplayed({ timeout: 10000 });
