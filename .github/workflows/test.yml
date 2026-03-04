@@ -77,11 +77,11 @@ jobs:
           fi
 
       - name: Run tests (excluding @auth-pat and @auth-session)
-        run: npm test -- --grep-invert "@auth-pat|@auth-session"
+        run: npm run test:chrome -- --grep-invert "@auth-pat|@auth-session"
 
       - name: Run @auth-pat tests
         if: ${{ !steps.validate-pat.outputs.error_msg }}
-        run: npm test -- --grep @auth-pat
+        run: npm run test:chrome -- --grep @auth-pat
         env:
           API_CONTRACT_TEST_PAT: ${{ secrets.API_CONTRACT_TEST_PAT }}
 
@@ -107,7 +107,7 @@ jobs:
         if: always()
         with:
           name: playwright-report-${{ matrix.os }}
-          path: playwright-report/
+          path: tests/runs/chrome/report/
           retention-days: 7
 
       - name: Upload test results
@@ -115,7 +115,7 @@ jobs:
         if: always()
         with:
           name: test-results-${{ matrix.os }}
-          path: test-results/
+          path: tests/runs/chrome/results/
           retention-days: 7
           if-no-files-found: ignore
 

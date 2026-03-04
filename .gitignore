@@ -5,8 +5,7 @@ node_modules/
 build/
 
 # Test output
-test-results/
-playwright-report/
+tests/runs/
 
 # OS files
 .DS_Store

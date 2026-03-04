@@ -1,7 +1,7 @@
 /**
  * Firefox Extension Test Suite
  *
- * Mirrors the Playwright/Chromium tests (tests/extension.spec.js) for Firefox,
+ * Mirrors the Playwright/Chromium tests (tests/chrome/extension.spec.js) for Firefox,
  * using WebdriverIO v9 with the BiDi protocol.
  *
  * Key difference: browser.mock().respond() is broken in Firefox BiDi, so popup
@@ -421,7 +421,10 @@ describe('Navigation', function () {
     await browser.url('https://github.com/microsoft/playwright/issues');
 
     // Click on first issue link (SPA navigation)
+    // waitForExist first: React re-renders cause stale element references that
+    // make waitForDisplayed fail if called before the DOM stabilizes.
     const issueLink = await $('a[href^="/microsoft/playwright/issues/"]:not([href$="/issues/"])');
+    await issueLink.waitForExist({ timeout: 15000 });
     await issueLink.waitForDisplayed({ timeout: 10000 });
     await issueLink.click();
 
@@ -442,8 +445,11 @@ describe('Navigation', function () {
     await issuesTab.click();
 
     // Wait for issues list, click first issue
+    // waitForExist first: React re-renders cause stale element references that
+    // make waitForDisplayed fail if called before the DOM stabilizes.
     const issueLink = await $('a[href^="/microsoft/playwright/issues/"]:not([href$="/issues/"])');
-    await issueLink.waitForDisplayed({ timeout: 15000 });
+    await issueLink.waitForExist({ timeout: 15000 });
+    await issueLink.waitForDisplayed({ timeout: 10000 });
     await issueLink.click();
 
     // Wait for issue page header actions

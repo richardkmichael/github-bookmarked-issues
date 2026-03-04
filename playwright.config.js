@@ -9,14 +9,15 @@ process.stdout.columns = 200;
 
 export default defineConfig({
   globalSetup: './tests/global-setup.js',
-  testDir: './tests',
+  testDir: './tests/chrome',
   snapshotPathTemplate: '{snapshotDir}/{arg}{ext}',
-  snapshotDir: './tests/screenshots',
+  snapshotDir: './tests/screenshots/chrome',
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: 1,
-  reporter: [['list'], ['html', { open: 'never' }]],
+  outputDir: './tests/runs/chrome/results',
+  reporter: [['list'], ['html', { open: 'never', outputFolder: './tests/runs/chrome/report' }]],
   use: {
     trace: 'on-first-retry',
   },

@@ -2,10 +2,10 @@ import { test, expect, chromium } from '@playwright/test';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { readFileSync } from 'fs';
-import { getGitHubAuth, getSessionSkipReason, getPatSkipReason } from '../scripts/validate-github-authorization.js';
+import { getGitHubAuth, getSessionSkipReason, getPatSkipReason } from '../../scripts/validate-github-authorization.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const extensionPath = path.join(__dirname, '..', 'build', 'chrome');
+const extensionPath = path.join(__dirname, '..', '..', 'build', 'chrome');
 
 // Check auth once at module load for skip decisions
 const sessionSkipReason = getSessionSkipReason();
@@ -44,7 +44,7 @@ function issueUrl(issue) {
 
 // Load test fixture file
 function loadFixture(name) {
-  return readFileSync(path.join(__dirname, 'fixtures', name), 'utf-8');
+  return readFileSync(path.join(__dirname, '..', 'fixtures', name), 'utf-8');
 }
 
 test.describe('', () => {

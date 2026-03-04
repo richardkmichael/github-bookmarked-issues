@@ -27,6 +27,7 @@ export const config = {
   maxInstances: 1,
   capabilities: [{
     browserName: 'firefox',
+    browserVersion: 'stable',
     ...(process.env.WDIO_CLASSIC ? { 'wdio:enforceWebDriverClassic': true } : {}),
     'moz:firefoxOptions': {
       args: process.env.WDIO_HEADED ? [] : ['-headless'],
@@ -48,6 +49,7 @@ export const config = {
       baselineFolder: path.join(__dirname, 'tests', 'screenshots', 'firefox'),
       formatImageName: '{tag}',
       autoSaveBaseline: true,
+      screenshotPath: path.join(__dirname, 'tests', 'runs', 'firefox', 'screenshots'),
     }],
   ],
   framework: 'mocha',
