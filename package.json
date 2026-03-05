@@ -18,7 +18,9 @@
     "test:visual": "playwright test --grep @visual",
     "test:visual:update": "playwright test --grep @visual --update-snapshots",
     "test:firefox": "wdio run wdio.conf.js",
-    "package": "npm run build"
+    "package": "npm run build",
+    "publish:dry-run": "publish-extension --chrome-zip build/bundle/*.zip --firefox-zip build/bundle/*.xpi --dry-run",
+    "publish": "publish-extension --chrome-zip build/bundle/*.zip --firefox-zip build/bundle/*.xpi"
   },
   "dependencies": {
     "@github/relative-time-element": "5.0.0"
@@ -33,6 +35,7 @@
     "chokidar": "^5.0.0",
     "dotenv": "^17.2.3",
     "geckodriver": "^6.1.0",
+    "publish-browser-extension": "^4.0.4",
     "web-ext": "^9.0.0"
   }
 }

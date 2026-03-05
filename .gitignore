@@ -12,4 +12,5 @@ tests/runs/
 
 # Environment variables (may contain GitHub session credentials)
 .env
+.env.submit
 .env.expired_auth.bak
