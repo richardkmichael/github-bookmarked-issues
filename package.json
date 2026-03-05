@@ -1,6 +1,6 @@
 {
   "name": "github-bookmarked-issues",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Track your bookmarked GitHub issues across all repositories with cross-device sync",
   "private": true,
   "type": "module",
