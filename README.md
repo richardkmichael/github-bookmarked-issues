@@ -5,9 +5,21 @@
 - Toolbar popup - View bookmarks, import/export as Markdown lists
 - Options - Configure GitHub PAT for higher API rate limits
 
+### Screenshots
+
+<p>
+  <img src="extension/assets/store/chrome/chrome-01-popup.png" alt="Toolbar popup" width="280">
+  <img src="extension/assets/store/chrome/chrome-02-bookmarked-view.png" alt="Bookmarked view" width="280">
+  <img src="extension/assets/store/chrome/chrome-03-issue.png" alt="Bookmark button" width="280">
+  <img src="extension/assets/store/chrome/chrome-04-settings.png" alt="Settings" width="280">
+</p>
+
 ## Install
 
-Manual install, until Chrome Web Store and Firefox Add-On signing.
+- [Chrome Webstore](https://chromewebstore.google.com/detail/github-bookmarked-issues/kdfehpmalbfoffnicnelgdnlkfomlhbd)
+- [Firefox Addon](https://addons.mozilla.org/en-CA/firefox/addon/github-bookmarked-issues/)
+
+### Manual
 
 Download the extension ZIP or XPI from [release assets](https://github.com/richardkmichael/github-bookmarked-issues/releases).
 
