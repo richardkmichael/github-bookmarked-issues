@@ -5,9 +5,21 @@
 - Toolbar popup - View bookmarks, import/export as Markdown lists
 - Options - Configure GitHub PAT for higher API rate limits
 
+### Screenshots
+
+<p>
+  <img src="extension/assets/store/chrome/chrome-01-popup.png" alt="Toolbar popup" width="280">
+  <img src="extension/assets/store/chrome/chrome-02-bookmarked-view.png" alt="Bookmarked view" width="280">
+  <img src="extension/assets/store/chrome/chrome-03-issue.png" alt="Bookmark button" width="280">
+  <img src="extension/assets/store/chrome/chrome-04-settings.png" alt="Settings" width="280">
+</p>
+
 ## Install
 
-Manual install, until Chrome Web Store and Firefox Add-On signing.
+- [Chrome Web Store](https://chromewebstore.google.com/detail/github-bookmarked-issues/kdfehpmalbfoffnicnelgdnlkfomlhbd)
+- [Firefox Add-ons](https://addons.mozilla.org/en-CA/firefox/addon/github-bookmarked-issues/)
+
+### Manual
 
 Download the extension ZIP or XPI from [release assets](https://github.com/richardkmichael/github-bookmarked-issues/releases).
 
@@ -42,7 +54,27 @@ npm run dev:watch    # Auto-rebuild on changes
 npm test             # Run Playwright tests
 ```
 
+### Downloading CI visual test diffs
+
+When visual tests fail in CI, diff images are uploaded as artifacts. Download them to compare
+locally:
+
+```bash
+# Find the failed run
+gh run list --status failure --limit 5
+
+# Download Chrome visual diffs (Playwright test-results artifact)
+gh run download <run-id> -n test-results-ubuntu-latest -D .tmp/ci-screenshots/ubuntu
+
+# Download Firefox visual diffs (uploaded only on failure)
+gh run download <run-id> -n firefox-screenshots-ubuntu-latest -D .tmp/ci-screenshots/ubuntu
+```
+
+Artifact names use the matrix OS: `macos-latest`, `ubuntu-latest`, `windows-latest` (Chrome only).
+
 ## Release and version
+
+See [PUBLISH.md](PUBLISH.md) for complete versioning, CI, and store publishing information.
 
 Releases are driven by annotated git tags (e.g., `v1.0.0`, `v1.0.0-rc3`).
 
@@ -92,7 +124,6 @@ package filenames instead.
 
 ## Known Limitations
 
-- Bookmarked view navigation: Must navigate from a built-in view (e.g., `/issues/created`), then click "Bookmarked". Direct URL navigation to `/issues/bookmarked` returns 404 (GitHub's React router doesn't know the route).
 - GraphQL discovery requires a github.com tab: The extension discovers GraphQL query hashes by intercepting HTTP headers from `github.com` page loads. Without discovery (e.g. if you haven't visited GitHub since installing), the Bookmarked view falls back to REST API with rate limits. Workaround: navigate to any `github.com` page, or configure a PAT in Settings.
-- Popup always uses REST API: Due to browser security restrictions (`Sec-Fetch-Site` header), the popup cannot use GitHub's internal GraphQL API. Without a PAT, it is limited to 60 requests/hour (unauthenticated). With many bookmarks, this can cause issues to fail to load. Configure a PAT in Settings for 5,000 requests/hour.
-- Not cross-browser: Local and browser-specific storage only, e.g. Google Account, Firefox Account
+- Popup uses the REST API: due to browser security restrictions (`Sec-Fetch-Site` header), the popup cannot use GitHub's internal GraphQL API. Without a PAT, it is limited to 60 requests/hour (unauthenticated). With many bookmarks, this can cause issues to fail to load. Configure a PAT in Settings for 5,000 requests/hour.
+- Storage is per-browser, e.g. Google Account, Firefox Account

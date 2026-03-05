@@ -1,22 +1,26 @@
-# Store Listing
+# Shared store information
 
-## Short Description (used in both stores, 82 chars)
+Shared store information for cut-and-paste.
+
+## Summary
 
 Track your bookmarked GitHub issues across all repositories with cross-device sync
 
-## Detailed Description
+## Description
 
-This extension adds a "Bookmarked" view to github.com/issues, alongside GitHub's built-in views like
-"Created" and "Assigned." Bookmark any issue from its page and find it later in the toolbar popup
-or GitHub view.
+```
+Bookmark any issue from its page and find it later in one place.  GitHub Bookmarked Issues adds a
+Bookmarked view to github.com/issues, alongside GitHub's built-in views.
 
 Features:
 
 - Bookmark button on every GitHub issue page
-- Bookmarked view at github.com/issues, integrated with GitHub's native UI
-- Toolbar popup for quick access to all bookmarked issues
-- Cross-device sync via browser sync (using your Google or Firefox account)
-- Uses Markdown lists for easy import/export
+- Bookmarked view at github.com/issues with search, sort and filter
+- Cross-device sync via your browser's built-in sync (Google Account or
+  Firefox Account)
+- Toolbar icon for quick access to all bookmarked issues
+- Copy bookmarked issues as Markdown links
+- Import issues from GitHub URLs
 - Works without authentication; optional GitHub PAT for higher API rate limits
 
 Permissions:
@@ -27,12 +31,34 @@ Permissions:
   issue pages and fetches issue details from GitHub's API
 
 No data is sent to any server other than GitHub's API. No analytics or tracking. Fully open source.
+```
 
 Source code: https://github.com/richardkmichael/github-bookmarked-issues
 
+# Specific store information
+
+## Firefox Add-on
+
+Add description, icon and screenshots to the Firefox Addons listing using the [Add-on Developer Hub](https://addons.mozilla.org/en-US/developers/addon/github-bookmarked-issues/edit):
+
+```
+  > Edit Product Page
+    > Add screenshots
+    > Add 128x128 icon (`assets/icon-128.png`)
+```
+
+Screenshot captions:
+
+1. `Toolbar icon for quick access to bookmarked issues.`
+2. `Bookmark button on each GitHub Issue page.`
+3. `Bookmarked view added alongside native views.`
+4. `Optional: configure a read-only PAT for higher API rate limits.`
+
 ## Chrome Web Store
 
-Privacy practices justifications:
+Add description, icon and screenshots to the Chrome Web Store listing using the [Developer Dashboard](https://chrome.google.com/webstore/devconsole/c4788956-5ef1-486f-abc2-4acc9ea32cb2/kdfehpmalbfoffnicnelgdnlkfomlhbd/edit/listing):
+
+### Privacy practices justifications:
 
 ### Storage
 
@@ -56,7 +82,8 @@ in the toolbar popup.
 
 This extension does not use remote code. All JavaScript is bundled in the extension package.
 
-## Categories
+# Taking screenshots
 
-Chrome Web Store: Productivity
-Firefox AMO: Other (no exact match; alternatively: Web Development)
+## macOS
+
+Size browser window to 1168 x 688 (accommodates window shadow), then screenshot window: `Option+Shift+4 - Space`.
