@@ -36,6 +36,6 @@
     "dotenv": "^17.2.3",
     "geckodriver": "^6.1.0",
     "publish-browser-extension": "^4.0.4",
-    "web-ext": "^9.0.0"
+    "web-ext": "^10.0.0"
   }
 }
